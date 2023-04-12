@@ -57,10 +57,13 @@ button {
 }
 
 .current-card {
-    height: 13rem;
+    text-align: center;
+    padding-top: 1rem;
+    border: 2px solid black;
+    border-radius: 1rem;
+    
     display: flex;
     flex-direction: column;
-
 }
 
 .data-container {
@@ -79,6 +82,9 @@ button {
     gap: 0.25rem;
 }
 
+.data-container > * {
+    padding: 0.5rem;
+}
 
 /* modals */
 /* modified from https://www.w3schools.com/howto/tryit.asp?filename=tryhow_css_modal */
@@ -129,5 +135,14 @@ button {
 .modal-input-field {
     font-size: 1.5rem;
     padding: 1rem;
-    width: 50%;
+    width: 90%;
+    margin-bottom: 1rem;
+}
+
+.modal-submit-button {
+    display: block;
+    font-size: 1.5rem;
+    padding: 1rem;
+    border: 3px solid black;
+    border-radius: 1rem;
 }
