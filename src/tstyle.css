@@ -109,6 +109,12 @@ button {
     padding: 3rem 3rem;
     width: 60%;
     border: 10px solid black;
+
+  }
+
+  .form-container {
+    display: flex;
+    flex-direction: column;
   }
 
   .close-button {

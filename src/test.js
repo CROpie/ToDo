@@ -1,34 +1,124 @@
-// Creating dummy data
-const makeDummyTodo = (index) => {
-    const newTodo = {};
-    newTodo.name = `todo-${index}`;
-    newTodo.desc = 'description';
-    newTodo.duedate = 'yyyy-mm-dd hh:mm';
-    newTodo.notes = 'notes such as this';
-    newTodo.index = index;
-    return newTodo;
+// Creates a project list, populates it with projects populated with todos.
+const dummyDataHandler = () => {
+    const makeDummyTodo = (todoIndex) => {
+        const newTodo = {};
+        newTodo.name = `todo-${todoIndex}`;
+        newTodo.desc = 'description';
+        newTodo.duedate = 'yyyy-mm-dd hh:mm';
+        newTodo.notes = 'notes such as this';
+        newTodo.index = todoIndex;
+        return newTodo;
+    };
+
+    const makeDummyProject = (numTodos, projIndex) => {
+        const newProject = {};
+        newProject.name = `Project - ${projIndex}`;
+        newProject.data = [];
+        newProject.index = projIndex;
+        for (let i = 0; i < numTodos; i++) {
+            newProject.data.push(makeDummyTodo(i));
+        }
+        return newProject;
+    };
+
+    const makeDummyProjectList = (numProjects) => {
+        const newProjectList = [];
+        for (let i = 0; i < numProjects; i++) {
+            newProjectList[i] = makeDummyProject(5, i);
+        }
+        return newProjectList;
+    };
+
+    return { makeDummyProjectList };
 };
 
-const makeDummyProject = (noTodos, index) => {
-    const newProject = {};
-    newProject.name = `Project - ${index}`;
-    newProject.data = [];
-    newProject.index = index;
-    for (let i = 0; i < noTodos; i++) {
-        newProject.data.push(makeDummyTodo(i));
-    }
-    return newProject;
-};
+const displayContent = () => {
+    /*
+    const projectClickHandler = (e) => {
+        // Retrieve the project number via dataset
+        const projIndex = e.target.dataset.projIndex;
 
-const makeDummyProjectList = (noProjects) => {
-    const newProjectList = [];
-    for (let i = 0; i < noProjects; i++) {
-        newProjectList[i] = makeDummyProject(5, i);
-    }
-    return newProjectList;
-};
+        // Clicking an open project will close it
+        if (document.querySelector(`[data-projectcontainer="${projIndex}"]`)) {
+            document
+                .querySelector(`[data-projectcontainer="${projIndex}"]`)
+                .remove();
+            return;
+        }
+        startProgram().displayUserTodo(projIndex);
+    };
+    */
 
-const dummyData = makeDummyProjectList(3);
+    const displayProjects = (userData) => {
+        // reset the page
+        if (document.querySelector('#project-container')) {
+            document.querySelector('#project-container').remove();
+        }
+
+        const projectContainer = document.createElement('div');
+        projectContainer.setAttribute('id', 'project-container');
+        document.body.appendChild(projectContainer);
+
+        // Make a button for every project in the list
+        userData.forEach((project) => {
+            const currentProject = document.createElement('button');
+            currentProject.textContent = project.name;
+            currentProject.classList.add('project-button');
+            currentProject.dataset.projIndex = project.index;
+            currentProject.addEventListener(
+                'click',
+                startProgram().projectClickHandler
+            );
+            projectContainer.appendChild(currentProject);
+        });
+
+        // Make a button for adding a new project
+        const newProject = document.createElement('button');
+        newProject.textContent = 'Create New Project';
+        newProject.classList.add('project-button');
+        newProject.classList.add('new-project-button');
+        newProject.dataset.projectNo = 'new';
+        newProject.addEventListener('click', createNewProject);
+        projectContainer.appendChild(newProject);
+    };
+
+    const displayTodos = (projIndex) => {
+        // close any open todos
+        if (document.querySelector('.todo-container')) {
+            document.querySelector('.todo-container').remove();
+        }
+        const newTodoContainer = document.createElement('div');
+        newTodoContainer.classList.add('todo-container');
+        newTodoContainer.dataset.projectcontainer = projIndex;
+        const currentProject = document.querySelector(
+            `[data-project-no="${projIndex}"]`
+        );
+        currentProject.insertAdjacentElement('afterend', newTodoContainer);
+
+        dummyData[projectNo].data.forEach((todo, index) => {
+            const newTodoCard = document.createElement('div');
+            newTodoCard.dataset.card = `${projectNo}-${index}`;
+            newTodoCard.classList.add('todo-card');
+            newTodoCard.textContent = todo.name;
+
+            newTodoCard.addEventListener('click', todoClickHandler);
+
+            newTodoContainer.appendChild(newTodoCard);
+        });
+
+        // Make a button for adding a new todo
+        const newTodoCard = document.createElement('div');
+        newTodoCard.dataset.card = `${projectNo}-new`;
+        newTodoCard.classList.add('todo-card');
+        newTodoCard.textContent = 'Add New';
+        newTodoCard.onclick = () => {
+            createNewTodo(projectNo);
+        };
+        //newTodoCard.addEventListener('click', createNewTodo);
+        newTodoContainer.appendChild(newTodoCard);
+    };
+    return { displayProjects };
+};
 
 const updateTodo = (projectNo, modifyData) => {
     const currentIndex = modifyData.index;
@@ -51,89 +141,6 @@ const makeProject = (newProjectTitle) => {
     newProject.data = [];
     newProject.index = index;
     dummyData.push(newProject);
-};
-
-const projectClickHandler = (e) => {
-    // Retrieve the project number via dataset
-    const selectedProject = e.target.dataset.projectNo;
-
-    // Clicking an open project will close it
-    if (
-        document.querySelector(`[data-projectcontainer="${selectedProject}"]`)
-    ) {
-        document
-            .querySelector(`[data-projectcontainer="${selectedProject}"]`)
-            .remove();
-        return;
-    }
-
-    displayTodos(selectedProject);
-};
-
-const displayProjects = (projectList) => {
-    // reset the page
-    if (document.querySelector('#project-container')) {
-        document.querySelector('#project-container').remove();
-    }
-
-    const projectContainer = document.createElement('div');
-    projectContainer.setAttribute('id', 'project-container');
-    document.body.appendChild(projectContainer);
-
-    // Make a button for every project in the list
-    projectList.forEach((project) => {
-        const currentProject = document.createElement('button');
-        currentProject.textContent = project.name;
-        currentProject.classList.add('project-button');
-        currentProject.dataset.projectNo = project.index;
-        currentProject.addEventListener('click', projectClickHandler);
-        projectContainer.appendChild(currentProject);
-    });
-
-    // Make a button for adding a new project
-    const newProject = document.createElement('button');
-    newProject.textContent = 'Create New Project';
-    newProject.classList.add('project-button');
-    newProject.classList.add('new-project-button');
-    newProject.dataset.projectNo = 'new';
-    newProject.addEventListener('click', createNewProject);
-    projectContainer.appendChild(newProject);
-};
-
-const displayTodos = (projectNo) => {
-    // close any open todos
-    if (document.querySelector('.todo-container')) {
-        document.querySelector('.todo-container').remove();
-    }
-    const newTodoContainer = document.createElement('div');
-    newTodoContainer.classList.add('todo-container');
-    newTodoContainer.dataset.projectcontainer = projectNo;
-    const currentProject = document.querySelector(
-        `[data-project-no="${projectNo}"]`
-    );
-    currentProject.insertAdjacentElement('afterend', newTodoContainer);
-
-    dummyData[projectNo].data.forEach((todo, index) => {
-        const newTodoCard = document.createElement('div');
-        newTodoCard.dataset.card = `${projectNo}-${index}`;
-        newTodoCard.classList.add('todo-card');
-        newTodoCard.textContent = todo.name;
-
-        newTodoCard.addEventListener('click', todoClickHandler);
-
-        newTodoContainer.appendChild(newTodoCard);
-    });
-
-    // Make a button for adding a new todo
-    const newTodoCard = document.createElement('div');
-    newTodoCard.dataset.card = `${projectNo}-new`;
-    newTodoCard.classList.add('todo-card');
-    newTodoCard.textContent = 'Add New';
-    newTodoCard.onclick = () => {
-        createNewTodo(projectNo);
-    };
-    //newTodoCard.addEventListener('click', createNewTodo);
-    newTodoContainer.appendChild(newTodoCard);
 };
 
 const todoClickHandler = (e) => {
@@ -441,5 +448,51 @@ const createNewTodo = (projectNo) => {
 };
 
 // Start
+// Each user could run this by _username_ = startProgram()
+// choose options for blank or for dummy data? startProgram( "value" )
+const startProgram = () => {
+    let userData = [];
 
-displayProjects(dummyData);
+    const addDummyData = () => {
+        userData = dummyDataHandler().makeDummyProjectList(3);
+    };
+
+    const displayUserData = () => {
+        displayContent().displayProjects(userData);
+    };
+
+    const projectClickHandler = (e) => {
+        // Retrieve the project number via dataset
+        const projIndex = e.target.dataset.projIndex;
+
+        // Clicking an open project will close it
+        if (document.querySelector(`[data-projectcontainer="${projIndex}"]`)) {
+            document
+                .querySelector(`[data-projectcontainer="${projIndex}"]`)
+                .remove();
+            return;
+        }
+        console.log(startProgram().projectList());
+        console.log(projIndex);
+        console.log(projectList()[projIndex]);
+    };
+
+    /*
+    const displayUserTodo = (projIndex) => {
+        displayContent().displayTodos(userData[projIndex]);
+    };
+    */
+
+    const projectList = () => userData;
+
+    return {
+        addDummyData,
+        displayUserData,
+        projectList,
+        projectClickHandler,
+    };
+};
+
+const chris = startProgram();
+chris.addDummyData();
+chris.displayUserData();

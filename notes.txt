@@ -1,0 +1,14 @@
+userInterface creates a new (instance?) of the program via variable = userInterface
+
+the eventListeners need to be added inside this function.
+If they aren't, ie if they are added when the buttons etc are created, things will be out of order.
+As in, the target function might not have been read by the program yet.
+
+In any case, clicking a button can send a message to userInterface about what was clicked.
+
+This message is sent to the new instance of the program.
+
+The new instance of the program contains the data.
+(Dummy data created by an outside funtion can be sent to the instance)
+
+It combines this information, and sends it to displayContent()
