@@ -255,22 +255,6 @@ const inputInformation = () => {
         return inputContainer;
     };
 
-    /* // combined in createModal
-    const modalCloseButton = () => {
-        const closeButton = document.createElement('span');
-        closeButton.classList.add('close-button');
-        closeButton.textContent = 'X';
-
-        return closeButton;
-    };
-
-    // combined in createModal
-    const createFormContainer = () => {
-        const formContainer = document.createElement('div');
-        formContainer.classList.add('form-container');
-        return formContainer;
-    };
-*/
     const modalSubmitButton = () => {
         const submitButton = document.createElement('button');
         submitButton.setAttribute('type', 'button');
@@ -324,10 +308,24 @@ const inputInformation = () => {
 };
 
 // Start
-// Each user could run this by _username_ = startProgram()
-// choose options for blank or for dummy data? startProgram( "value" )
-const startProgram = () => {
-    let userData = [];
+const startProgram = (username) => {
+    // Create a new localStorage if the username isn't recognized
+    if (!localStorage.getItem(username)) {
+        if (username === 'default') {
+            console.log('creating default');
+            let defaultData = dummyDataHandler().makeDummyProjectList(3);
+            const defaultJson = JSON.stringify(defaultData);
+            localStorage.setItem(username, defaultJson);
+        } else {
+            console.log('creating new user..');
+            let defaultData = [];
+            const defaultJson = JSON.stringify(defaultData);
+            localStorage.setItem(username, defaultJson);
+        }
+    }
+
+    const jsonData = localStorage.getItem(`${username}`);
+    let userData = JSON.parse(jsonData);
 
     const addDummyData = () => {
         userData = dummyDataHandler().makeDummyProjectList(3);
@@ -365,6 +363,7 @@ const startProgram = () => {
     const newProject = (newProject) => {
         newProject.index = userData.length;
         userData.push(newProject);
+        saveData(userData);
     };
 
     const newTodoModal = () => {
@@ -375,6 +374,7 @@ const startProgram = () => {
     const newTodo = (projIndex, newTodo) => {
         newTodo.index = userData[projIndex].data.length;
         userData[projIndex].data.push(newTodo);
+        saveData(userData);
     };
 
     // Send the exact data set to inputInformation in order to display it before modification
@@ -385,6 +385,12 @@ const startProgram = () => {
     const editTodo = (indeces, newTodo) => {
         newTodo.index = indeces[1];
         userData[indeces[0]].data.splice(indeces[1], 1, newTodo);
+        saveData(userData);
+    };
+
+    const saveData = (userData) => {
+        const tempJson = JSON.stringify(userData);
+        localStorage.setItem(`${username}`, tempJson);
     };
 
     const projectList = () => userData;
@@ -411,12 +417,9 @@ const startProgram = () => {
 };
 
 // Event listeners and their actions.
-// Sends clicked item 'id' to startProgram where it is combined with the data
-const userInterface = () => {
-    const user = startProgram();
-    user.addDummyData();
-    //user.printUserProjects();
-    //user.printProjectTodos(1);
+// Identifies clicked item, sends it to startProgram where it is combined with the user's data and sent elsewhere to get processed
+const userInterface = (username) => {
+    const user = startProgram(username);
 
     const removeModal = () => {
         document.querySelector('#project-modal').remove();
@@ -571,4 +574,22 @@ const userInterface = () => {
     refreshPage();
 };
 
-userInterface();
+const logIn = () => {
+    // bring up modal
+    const testInput = document.createElement('input');
+    testInput.setAttribute('type', 'text');
+    document.body.appendChild(testInput);
+
+    // add 'enter' eventListener
+    testInput.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+            if (!testInput.value) {
+                return;
+            } else {
+                userInterface(testInput.value);
+            }
+        }
+    });
+};
+
+logIn();
