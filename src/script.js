@@ -1,3 +1,73 @@
+const createDefaultData = () => {
+    const todayPlusInterval = (interval) => {
+        const today = new Date();
+        let day = today.getDate();
+        let month = today.getMonth() + 1;
+        let year = today.getFullYear();
+
+        const int = interval - 1;
+        const thirtyDayMonths = [4, 6, 9, 11];
+
+        if (month == '02' && day >= 28 - int) {
+            day = day + interval - 28;
+            month = month + 1;
+        } else if (thirtyDayMonths.includes(month) && day >= 30 - int) {
+            day = day + interval - 30;
+            month = month + 1;
+        } else if (day >= 31 - int && month == '12') {
+            day = day + interval - 31;
+            month = 1;
+            year = year + 1;
+        } else if (day >= 30 - int) {
+            day = day + interval - 31;
+            month = month + 1;
+        } else {
+            day = day + interval;
+        }
+
+        const padMonth = month.toString().padStart(2, 0);
+        const padDay = day.toString().padStart(2, 0);
+        const newDate = `${year}-${padMonth}-${padDay}`;
+
+        return newDate;
+    };
+
+    const saveDataSet = () => {
+        fetch('./defaultData.json')
+            .then((response) => {
+                return response.json();
+            })
+            .then((data) => {
+                // want a date in the past, but if it is the 1st of the month, todayPlusInterval(-1) will not work properly
+                // in this case, just remove a year from the current day.
+                const checkToday = todayPlusInterval(0);
+                if (checkToday.slice(8) === '01') {
+                    let splitDate = checkToday.split('-');
+                    const newDate = `${splitDate[0] - 1}-${splitDate[1]}-${
+                        splitDate[2]
+                    }`;
+                    data[0].data[0].duedate = newDate;
+                } else {
+                    data[0].data[0].duedate = todayPlusInterval(-1);
+                }
+                data[0].data[1].duedate = todayPlusInterval(0);
+                data[0].data[2].duedate = todayPlusInterval(1);
+                data[0].data[3].duedate = todayPlusInterval(2);
+                data[0].data[4].duedate = todayPlusInterval(14);
+                data[1].data[0].duedate = todayPlusInterval(0);
+                data[1].data[1].duedate = todayPlusInterval(0);
+                data[1].data[2].duedate = todayPlusInterval(1);
+                data[1].data[3].duedate = todayPlusInterval(1);
+                data[1].data[4].duedate = todayPlusInterval(4);
+
+                const defaultJson = JSON.stringify(data);
+                localStorage.setItem('Default', defaultJson);
+            });
+    };
+
+    return { saveDataSet };
+};
+
 // Creates the outline of the page from a default/blank HTML document
 const createPageLayout = () => {
     // returns a new element with id and optional text
@@ -17,7 +87,13 @@ const createPageLayout = () => {
         const menu = createElementWithID('menu');
         fullContainer.appendChild(menu);
 
-        menu.appendChild(createElementWithID('logo', 'LOGO'));
+        menu.appendChild(createElementWithID('logoDiv'));
+        const bearLogo = document.createElement('img');
+        bearLogo.classList.add('bearImage');
+        bearLogo.src = './Images/BearbeerCrop.png';
+        document.querySelector('#logoDiv').appendChild(bearLogo);
+        const bearText = createElementWithID('bearText', 'Opie the Beer Bear');
+        document.querySelector('#logoDiv').appendChild(bearText);
 
         const dateContainer = createElementWithID('date-container');
         menu.appendChild(dateContainer);
@@ -65,6 +141,7 @@ const createPageLayout = () => {
 
         display.appendChild(createElementWithID('header'));
     };
+
     return { createBasicDom };
 };
 
@@ -83,11 +160,23 @@ const displayContent = () => {
     };
 
     const makeProjectButton = (project) => {
+        const projectButtonContainer = document.createElement('div');
+        projectButtonContainer.classList.add('proj-button-container');
+        projectButtonContainer.dataset.projIndex = project.index;
+
         const projectButton = document.createElement('div');
         projectButton.textContent = project.name;
         projectButton.classList.add('project');
         projectButton.dataset.projIndex = project.index;
-        return projectButton;
+        projectButtonContainer.appendChild(projectButton);
+
+        const delButton = document.createElement('div');
+        delButton.textContent = 'X';
+        delButton.dataset.projDel = project.index;
+        delButton.classList.add('proj-del-button');
+        projectButtonContainer.appendChild(delButton);
+
+        return projectButtonContainer;
     };
 
     const prettyDate = (dateString) => {
@@ -135,8 +224,19 @@ const displayContent = () => {
 
         const todoDate = document.createElement('div');
         todoDate.classList.add('todo-date');
-        const date = prettyDate(todo.duedate);
-        todoDate.textContent = date;
+
+        if (todo.dateFlag == 'today') {
+            todoDate.textContent = 'Today';
+            todoDate.classList.add('date-today');
+        } else if (todo.dateFlag == 'tommorrow') {
+            todoDate.textContent = 'Tomorrow';
+            todoDate.classList.add('date-tomorrow');
+        } else if (todo.dateFlag == 'past') {
+            todoDate.textContent = prettyDate(todo.duedate);
+            todoDate.classList.add('date-past');
+        } else {
+            todoDate.textContent = prettyDate(todo.duedate);
+        }
         todoDiv.appendChild(todoDate);
 
         const delButton = makeDelButton(projIndex, todo.index);
@@ -344,11 +444,24 @@ const displayContent = () => {
 
         sortedData = filterByDate(sortedData, chosenDateSort);
 
+        const dateToday = todayPlusInterval(0);
+        const dateTomorrow = todayPlusInterval(1);
         sortedData.forEach((sortedTodo) => {
             let todo = {};
             todo.name = sortedTodo.tName;
             todo.desc = sortedTodo.desc;
+
+            // Flag certain todo dates for text and colour alterations
+            if (sortedTodo.duedate == dateToday) {
+                todo.dateFlag = 'today';
+            } else if (sortedTodo.duedate == dateTomorrow) {
+                todo.dateFlag = 'tommorrow';
+            } else if (sortedTodo.duedate < dateToday) {
+                todo.dateFlag = 'past';
+            }
+
             todo.duedate = sortedTodo.duedate;
+
             todo.notes = sortedTodo.notes;
             todo.index = parseInt(sortedTodo.tIndex);
             const todoDiv = makeTodoDiv(sortedTodo.pIndex, todo);
@@ -381,12 +494,25 @@ const displayContent = () => {
             document.querySelector('.selected-date').dataset.dateIndex;
 
         sortedData = filterByDate(sortedData, chosenDateSort);
+        const dateToday = todayPlusInterval(0);
+        const dateTomorrow = todayPlusInterval(1);
 
         sortedData.forEach((sortedTodo) => {
             let todo = {};
             todo.name = sortedTodo.tName;
             todo.desc = sortedTodo.desc;
+
+            // Flag certain todo dates for text and colour alterations
+            if (sortedTodo.duedate == dateToday) {
+                todo.dateFlag = 'today';
+            } else if (sortedTodo.duedate == dateTomorrow) {
+                todo.dateFlag = 'tommorrow';
+            } else if (sortedTodo.duedate < dateToday) {
+                todo.dateFlag = 'past';
+            }
+
             todo.duedate = sortedTodo.duedate;
+
             todo.notes = sortedTodo.notes;
             todo.index = parseInt(sortedTodo.tIndex);
             const todoDiv = makeTodoDiv(sortedTodo.pIndex, todo);
@@ -646,6 +772,16 @@ const userData = (username) => {
         inputInformation().newTodoModal(projIndex, projectList);
     };
 
+    const removeProject = (projIndex) => {
+        // remove one project
+        userData.splice(projIndex, 1);
+        // re-allocate the indeces for project.index
+        userData.forEach((project, index) => {
+            project.index = index;
+        });
+        saveData(userData);
+    };
+
     const removeTodo = (splitIndex) => {
         // remove one todo entry
         userData[splitIndex[0]].data.splice(splitIndex[1], 1);
@@ -708,6 +844,7 @@ const userData = (username) => {
         displayUserTodos,
         displayUserData,
         newProject,
+        removeProject,
         removeTodo,
         editTodoModal,
         editTodo,
@@ -941,6 +1078,37 @@ const userInterface = (username) => {
         }
     };
 
+    const projectMouseOutHandler = (e) => {
+        const projIndex = e.target.dataset.projIndex;
+        const projDelButton = document.querySelector(
+            `[data-proj-del="${projIndex}"]`
+        );
+        projDelButton.style.visibility = 'hidden';
+    };
+
+    const projectMouseInHandler = (e) => {
+        // a TypeError: cannot read properties of null comes up when hovering over the X for some reason
+        // try/catch makes it so the error doesn't display, doesn't effect the outcome of the function
+        try {
+            const projIndex = e.target.dataset.projIndex;
+            const projDelButton = document.querySelector(
+                `[data-proj-del="${projIndex}"]`
+            );
+            projDelButton.style.visibility = 'visible';
+        } catch {}
+    };
+
+    const projectDelClickHandler = (e) => {
+        const projIndex = e.target.dataset.projDel;
+        user.removeProject(projIndex);
+
+        // Find the current date display option
+
+        const dateDisplayIndex =
+            document.querySelector('.selected-date').dataset.dateIndex;
+        refreshPage('all', dateDisplayIndex);
+    };
+
     // loads the starting application screen
     const refreshPage = (projDisplayIndex, dateDisplayIndex) => {
         removeModal();
@@ -979,6 +1147,24 @@ const userInterface = (username) => {
             button.addEventListener('click', projectClickHandler);
         });
 
+        // Make the project delete buttons visible and invisible when the mouse goes over the relevant project
+        document
+            .querySelectorAll('.proj-button-container')
+            .forEach((button) => {
+                button.addEventListener('mouseover', projectMouseInHandler);
+            });
+
+        document
+            .querySelectorAll('.proj-button-container')
+            .forEach((button) => {
+                button.addEventListener('mouseleave', projectMouseOutHandler);
+            });
+
+        // Project delete buttons
+        document.querySelectorAll('.proj-del-button').forEach((button) => {
+            button.addEventListener('click', projectDelClickHandler);
+        });
+
         // Date sorting functions (all, today, 7 days)
         document.querySelectorAll('.date-item').forEach((button) => {
             button.addEventListener('click', dateClickHandler);
@@ -1005,6 +1191,7 @@ const logIn = () => {
 
     // add 'enter' eventListener
     const usernameInput = document.querySelector('.modal-input-field');
+    usernameInput.focus();
     usernameInput.addEventListener('keypress', (event) => {
         if (event.key === 'Enter') {
             if (!usernameInput.value) {
@@ -1016,5 +1203,6 @@ const logIn = () => {
     });
 };
 
+createDefaultData().saveDataSet();
 createPageLayout().createBasicDom();
 logIn();

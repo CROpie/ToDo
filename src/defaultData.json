@@ -1,0 +1,84 @@
+[
+    {
+        "name": "Lab Duties",
+        "data": [
+            {
+                "name": "Waste Disposal",
+                "desc": "By 10:00 at the latest",
+                "duedate": "2023-04-16",
+                "notes": "Take down the TLC plates too",
+                "index": 0
+            },
+            {
+                "name": "Waste Solvent Disposal",
+                "desc": "10:00 at the lobby",
+                "duedate": "2023-04-18",
+                "notes": "Make sure to bring back some empty carboys (if available)",
+                "index": 1
+            },
+            {
+                "name": "Liquid Nitrogen",
+                "desc": "Take it from floor 3 when it arrives",
+                "duedate": "2023-04-19",
+                "notes": "Asada has been doing freeze-pump-thaw cycles recently, so need to fill it to the brim",
+                "index": 2
+            },
+            {
+                "name": "Dry Ice",
+                "desc": "Move it to the storage container",
+                "duedate": "2023-04-20",
+                "notes": "Be sure to dispose of the plastic inside the container before filling it",
+                "index": 3
+            },
+            {
+                "name": "Fume Hood Maintenance",
+                "desc": "Scheduled maintenance",
+                "duedate": "2023-05-02",
+                "notes": "Won't be able to use the fume hood on this day",
+                "index": 4
+            }
+        ],
+        "index": 0
+    },
+    {
+        "name": "Catalysis",
+        "data": [
+            {
+                "name": "Mitsunobu reaction",
+                "desc": "Book 7 page 12",
+                "duedate": "2023-04-16",
+                "notes": "Didn't run under nitrogen last time and it was still fine. Repeat reaction to make more starting material",
+                "index": 0
+            },
+            {
+                "name": "Wash glassware",
+                "desc": "Do the syringe needles top",
+                "duedate": "2023-04-18",
+                "notes": "Make sure to put in the oven in preparation for tomorrow's reaction",
+                "index": 1
+            },
+            {
+                "name": "BCl3/AlCl3 reaction",
+                "desc": "Book 7 page 10",
+                "duedate": "2023-04-19",
+                "notes": "Enough material for a 1g scale reaction",
+                "index": 2
+            },
+            {
+                "name": "Sonogashira coupling",
+                "desc": "Book 7 page 11",
+                "duedate": "2023-04-20",
+                "notes": "Use the fresh alkyne when it arrives",
+                "index": 3
+            },
+            {
+                "name": "Chemical delivery",
+                "desc": "Materials for the next set of reactions",
+                "duedate": "2023-04-25",
+                "notes": "May need to order more AlCl3 soon",
+                "index": 4
+            }
+        ],
+        "index": 1
+    }
+]

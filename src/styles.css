@@ -10,6 +10,7 @@
     font-family:system-ui;
     text-shadow: var(--font-shadow);
     border: none;
+    cursor: default;
 }
 
 body {
@@ -49,12 +50,26 @@ body {
 
 }
 
-#logo {
+#logoDiv {
     height: var(--header-height);
     background-color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+}
+
+.bearImage {
+    height: 100%;
+    flex: 0;
+}
+
+#bearText {
+    font-size: 1.5rem;
+    color:orange
 }
 
 #date-container {
+    margin-top: -1rem;
 }
 
 #project-container {
@@ -62,6 +77,7 @@ body {
 
 .project {
     padding-left: 2rem;
+    flex: 1;
 }
 
 .project:hover {
@@ -77,6 +93,26 @@ body {
 
 .selected-date {
     color:orange;
+}
+
+.proj-button-container {
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+.proj-button-container:hover {
+    background-color: blueviolet;
+}
+
+.proj-del-button {
+    margin-right: 1.5rem;
+    font-size: 1.5rem;
+    visibility: hidden;
+}
+
+.proj-del-button:hover {
+    color:red;
 }
 
 #new-project {
@@ -101,7 +137,10 @@ body {
     border: 2px solid black;
     min-width: 450px;
     background-image: url(./Images/3626461.jpg);
-    background-size: 100% 100%;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-position: 200px;
 }
 
 
@@ -177,6 +216,18 @@ body {
     margin-right: 3rem;
 }
 
+.date-today {
+    color: red;
+}
+
+.date-tomorrow {
+    color: orange;
+}
+
+.date-past {
+    color: darkred;
+}
+
 .todo-del-button {
     padding: 0.5rem;
 }
@@ -217,8 +268,8 @@ body {
 
 }
 
-.open-todo-data:nth-child() {
-    margin-bottom: 10rem;
+.open-todo-data > :first-child {
+    color: rgb(255, 221, 0)
 }
 
 .todo-edit-button {
@@ -252,15 +303,20 @@ body {
     background-color: #fefefe;
     margin: auto;
     padding: 3rem 3rem;
-    width: 30%;
+    width: 50%;
     border: 10px solid black;
     border-top: 10px solid purple;
+    min-width: 400px;
+  }
+
+  .modal-content > * {
 
   }
 
   .form-container {
     display: flex;
     flex-direction: column;
+    flex: 1;
   }
 
   .close-button {
@@ -294,7 +350,7 @@ body {
     padding: 1rem;
     width: 90%;
     margin-bottom: 1rem;
-    border: 2px solid rgba(211, 211, 211, 0.5);
+    border: 2px solid greenyellow;
     border-radius: 1rem;
     outline: 0px;
     color: black;
