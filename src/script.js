@@ -212,9 +212,9 @@ const displayContent = () => {
         return delButton;
     };
 
-    const makeTodoDiv = (projIndex, todo) => {
+    const makeTodoDiv = (todo) => {
         const todoDiv = document.createElement('div');
-        todoDiv.dataset.todoIndeces = `${projIndex}-${todo.index}`;
+        todoDiv.dataset.projIndexTodoIndex = `${todo.projIndex}-${todo.index}`;
         todoDiv.classList.add('todo');
 
         const todoName = document.createElement('div');
@@ -239,7 +239,7 @@ const displayContent = () => {
         }
         todoDiv.appendChild(todoDate);
 
-        const delButton = makeDelButton(projIndex, todo.index);
+        const delButton = makeDelButton(todo.projIndex, todo.index);
         todoDiv.appendChild(delButton);
 
         return todoDiv;
@@ -247,37 +247,11 @@ const displayContent = () => {
 
     const makeAddNewTodoButton = (projIndex) => {
         const newTodoButton = document.createElement('div');
-        newTodoButton.dataset.todoIndeces = `${projIndex}-new`;
+        newTodoButton.dataset.projIndexTodoIndex = `${projIndex}-new`;
         newTodoButton.classList.add('todo');
         newTodoButton.setAttribute('id', 'new-todo');
         newTodoButton.textContent = 'New Todo';
         return newTodoButton;
-    };
-
-    const resetData = (currentTodo) => {
-        // If a todo-tab is open, close it
-        if (document.querySelector('.open-todo')) {
-            document.querySelector('.open-todo').remove();
-        }
-        if (document.querySelector('.current-todo')) {
-            document
-                .querySelector('.current-todo')
-                .classList.remove('current-todo');
-        }
-
-        currentTodo.classList.add('current-todo');
-        const dataContainer = document.createElement('div');
-        dataContainer.classList.add('open-todo');
-        currentTodo.insertAdjacentElement('afterend', dataContainer);
-        return dataContainer;
-    };
-
-    const makeEditButton = (splitIndex) => {
-        const modifyButton = document.createElement('div');
-        modifyButton.textContent = 'E';
-        modifyButton.dataset.edit = `${splitIndex[0]}-${splitIndex[1]}`;
-        modifyButton.classList.add('todo-edit-button');
-        return modifyButton;
     };
 
     // A function to move today's date forward by length 'interval'
@@ -316,220 +290,179 @@ const displayContent = () => {
         return newDate;
     };
 
+    const resetOpenTodo = () => {
+        // If a todo-tab is open, close it
+        if (document.querySelector('.open-todo')) {
+            document.querySelector('.open-todo').remove();
+        }
+        if (document.querySelector('.current-todo')) {
+            document
+                .querySelector('.current-todo')
+                .classList.remove('current-todo');
+        }
+    };
+
+    // If the current todo is open, close it. Return false to prevent the opening process
+    const toggleOpenTodo = (currentTodo) => {
+        if (currentTodo.classList.contains('current-todo')) {
+            if (document.querySelector('.open-todo')) {
+                document.querySelector('.open-todo').remove();
+            }
+            return false;
+        } else {
+            return true;
+        }
+    };
+
+    const createElementWithClass = (className, text) => {
+        const newElement = document.createElement('div');
+        newElement.classList.add(className);
+        newElement.textContent = text;
+        return newElement;
+    };
+
     const displayData = (todo, splitIndex) => {
-        // close and return if the selected todo is already displayed (ie toggle)
         const currentTodo = document.querySelector(
-            `[data-todo-indeces="${splitIndex[0]}-${splitIndex[1]}"]`
+            `[data-proj-index-todo-index="${splitIndex[0]}-${splitIndex[1]}"]`
         );
 
-        if (currentTodo.classList.contains('current-todo')) {
-            document.querySelector('.open-todo').remove();
+        // If the current todo is open, close it
+        if (!toggleOpenTodo(currentTodo)) {
             currentTodo.classList.remove('current-todo');
             return;
         }
+        // If a diffent todo is open, close it
+        resetOpenTodo();
 
-        // make a new container for data and display it
-        const dataContainer = resetData(currentTodo);
-        const dataArea = document.createElement('div');
-        dataArea.classList.add('open-todo-data');
+        currentTodo.classList.add('current-todo');
+
+        const dataContainer = createElementWithClass('open-todo');
+        currentTodo.insertAdjacentElement('afterend', dataContainer);
+
+        const dataArea = createElementWithClass('open-todo-data');
         dataContainer.appendChild(dataArea);
 
-        const dataDesc = document.createElement('div');
-        dataDesc.classList.add('todo-data');
-        dataDesc.textContent = todo.desc;
-        dataArea.appendChild(dataDesc);
+        dataArea.appendChild(createElementWithClass('todo-data', todo.desc));
+        dataArea.appendChild(createElementWithClass('todo-data', todo.notes));
 
-        const dataNotes = document.createElement('div');
-        dataNotes.classList.add('todo-data');
-        dataNotes.textContent = todo.notes;
-        dataArea.appendChild(dataNotes);
-
-        const modifyButton = makeEditButton(splitIndex);
+        const modifyButton = createElementWithClass('todo-edit-button', 'E');
+        modifyButton.dataset.edit = `${splitIndex[0]}-${splitIndex[1]}`;
         dataContainer.appendChild(modifyButton);
     };
 
-    // sorting a single project by duedate
-    // not necessary? But don't want to use sort functions on the userData list directly ..
-    const sortProjectFunction = (project) => {
-        const sortedProjectDataList = [];
+    const makeDuplicateTodo = (todo, projIndex) => {
+        const duplicateTodo = structuredClone(todo);
+        duplicateTodo.projIndex = projIndex;
 
-        project.data.forEach((todo) => {
-            const sortedUserDataEntry = {};
-            sortedUserDataEntry.pName = project.name;
-            sortedUserDataEntry.pIndex = project.index;
-
-            sortedUserDataEntry.tName = todo.name;
-            sortedUserDataEntry.desc = todo.desc;
-            sortedUserDataEntry.duedate = todo.duedate;
-            sortedUserDataEntry.notes = todo.notes;
-            sortedUserDataEntry.tIndex = todo.index;
-
-            sortedProjectDataList.push(sortedUserDataEntry);
-        });
-        const orderedData = sortedProjectDataList.sort((a, b) =>
-            a.duedate > b.duedate ? 1 : -1
-        );
-        return orderedData;
+        return duplicateTodo;
     };
 
-    // sorting todos by date
-    // creates a new list with the data from userData, sorts it, then returns it
+    // creates a new list with the data from userData
     // the new list is an array of todo objects, rather than an array of project objects
-    const sortAllFunction = (userData) => {
-        const sortedUserDataList = [];
+    // this allows sorting by date of todos from all projects combined
+    const getTodoList = (userData, projSelected) => {
+        const todoList = [];
 
-        userData.forEach((project) => {
-            project.data.forEach((todo) => {
-                const sortedUserDataEntry = {};
-                sortedUserDataEntry.pName = project.name;
-                sortedUserDataEntry.pIndex = project.index;
-
-                sortedUserDataEntry.tName = todo.name;
-                sortedUserDataEntry.desc = todo.desc;
-                sortedUserDataEntry.duedate = todo.duedate;
-                sortedUserDataEntry.notes = todo.notes;
-                sortedUserDataEntry.tIndex = todo.index;
-
-                sortedUserDataList.push(sortedUserDataEntry);
+        if (projSelected == 'all') {
+            userData.forEach((project) => {
+                project.data.forEach((todo) => {
+                    todoList.push(makeDuplicateTodo(todo, project.index));
+                });
             });
-        });
-
-        const orderedData = sortedUserDataList.sort((a, b) =>
-            a.duedate > b.duedate ? 1 : -1
-        );
-        return orderedData;
+        } else {
+            userData[projSelected].data.forEach((todo) => {
+                todoList.push(makeDuplicateTodo(todo, projSelected));
+            });
+        }
+        return todoList;
     };
 
-    const filterByDate = (sortedData, chosenDateSort) => {
-        // get Today's date, and increment it if requred
+    const filterByDate = (todoList, dateSelected) => {
+        // get strings for today's date and a date a week from today
         const today = todayPlusInterval(0);
         const oneWeek = todayPlusInterval(7);
 
-        if (chosenDateSort === 'week') {
-            sortedData = sortedData.filter((todo) => {
+        if (dateSelected === 'week') {
+            todoList = todoList.filter((todo) => {
                 if (todo.duedate < oneWeek && todo.duedate >= today) {
                     return true;
                 }
             });
-        } else if (chosenDateSort === 'day') {
-            sortedData = sortedData.filter((todo) => {
+        } else if (dateSelected === 'day') {
+            todoList = todoList.filter((todo) => {
                 if (todo.duedate == today) {
                     return true;
                 }
             });
-        } else if (chosenDateSort === 'past') {
-            sortedData = sortedData.filter((todo) => {
+        } else if (dateSelected === 'past') {
+            todoList = todoList.filter((todo) => {
                 if (todo.duedate < today) {
                     return true;
                 }
             });
         }
-        return sortedData;
+        return todoList;
     };
 
-    const displayAllTodos = (userData) => {
-        // create a fresh todoContainer div
-        const newTodoContainer = resetTodo();
-        document.querySelector('#display').appendChild(newTodoContainer);
-
-        // the data from the sorted array is then inputted during forEach
-        // userData isn't changed, and the forEach function has the appropriate references to it (tIndex, pIndex)
-        // therefore nothing else needs to change
-        // Probably more efficient to store a list of todos objects that have project info, rather than a list of project objects..
-        let sortedData = sortAllFunction(userData);
-
-        // filter function for how many days to display
-        const chosenDateSort =
-            document.querySelector('.selected-date').dataset.dateIndex;
-
-        sortedData = filterByDate(sortedData, chosenDateSort);
-
-        const dateToday = todayPlusInterval(0);
-        const dateTomorrow = todayPlusInterval(1);
-        sortedData.forEach((sortedTodo) => {
-            let todo = {};
-            todo.name = sortedTodo.tName;
-            todo.desc = sortedTodo.desc;
-
-            // Flag certain todo dates for text and colour alterations
-            if (sortedTodo.duedate == dateToday) {
-                todo.dateFlag = 'today';
-            } else if (sortedTodo.duedate == dateTomorrow) {
-                todo.dateFlag = 'tommorrow';
-            } else if (sortedTodo.duedate < dateToday) {
-                todo.dateFlag = 'past';
-            }
-
-            todo.duedate = sortedTodo.duedate;
-
-            todo.notes = sortedTodo.notes;
-            todo.index = parseInt(sortedTodo.tIndex);
-            const todoDiv = makeTodoDiv(sortedTodo.pIndex, todo);
-            newTodoContainer.appendChild(todoDiv);
-        });
-
-        /*
-        // Displaying unsorted (ie in the order added)
-        userData.forEach((project) => {
-            project.data.forEach((todo) => {
-                const todoDiv = makeTodoDiv(project.index, todo);
-                newTodoContainer.appendChild(todoDiv);
-            });
-        });
-*/
-        // Make a button for adding a new todo
-        const newTodoButton = makeAddNewTodoButton('all');
-        newTodoContainer.appendChild(newTodoButton);
+    const sortByDate = (todoList) => {
+        todoList = todoList.sort((a, b) => (a.duedate > b.duedate ? 1 : -1));
+        return todoList;
     };
 
-    const displayTodos = (project) => {
-        // create a fresh todoContainer div
-        const newTodoContainer = resetTodo();
-        document.querySelector('#display').appendChild(newTodoContainer);
-
-        sortedData = sortProjectFunction(project);
-
-        // filter function for how many days to display
-        const chosenDateSort =
-            document.querySelector('.selected-date').dataset.dateIndex;
-
-        sortedData = filterByDate(sortedData, chosenDateSort);
+    const flagDateColorCoding = (todoList) => {
         const dateToday = todayPlusInterval(0);
         const dateTomorrow = todayPlusInterval(1);
 
-        sortedData.forEach((sortedTodo) => {
-            let todo = {};
-            todo.name = sortedTodo.tName;
-            todo.desc = sortedTodo.desc;
-
+        todoList.forEach((todo) => {
             // Flag certain todo dates for text and colour alterations
-            if (sortedTodo.duedate == dateToday) {
+            if (todo.duedate == dateToday) {
                 todo.dateFlag = 'today';
-            } else if (sortedTodo.duedate == dateTomorrow) {
+            } else if (todo.duedate == dateTomorrow) {
                 todo.dateFlag = 'tommorrow';
-            } else if (sortedTodo.duedate < dateToday) {
+            } else if (todo.duedate < dateToday) {
                 todo.dateFlag = 'past';
             }
-
-            todo.duedate = sortedTodo.duedate;
-
-            todo.notes = sortedTodo.notes;
-            todo.index = parseInt(sortedTodo.tIndex);
-            const todoDiv = makeTodoDiv(sortedTodo.pIndex, todo);
-            newTodoContainer.appendChild(todoDiv);
         });
+        return todoList;
+    };
 
+    const displayTodos = (projIndex, userData) => {
         /*
-        // Displaying unsorted (ie in the order added)
-        project.data.forEach((todo) => {
-            const todoDiv = makeTodoDiv(project.index, todo);
-            newTodoContainer.appendChild(todoDiv);
-        });
+        // determine which projects are currently being displayed
+        const projSelected =
+            document.querySelector('.selected-project').dataset.projIndex;
         */
 
+        // replicate todos in a new array (of todo objects) having the appropriate projIndex as an attribute
+        // projSelected='all' will give an array of every todo, whereas projIndex='num' will just have the selected project todos
+        let todoList = getTodoList(userData, projIndex);
+
+        // determine which time period is currently being displayed
+        const dateSelected =
+            document.querySelector('.selected-date').dataset.dateIndex;
+
+        // filter todoList by time period selected
+        todoList = filterByDate(todoList, dateSelected);
+
+        // sort remaining todoList by duedate
+        todoList = sortByDate(todoList);
+
+        // flag certain due-days for color-coding and special text
+        todoList = flagDateColorCoding(todoList);
+
+        // create a fresh #todo-container div
+        const todoContainer = resetTodo();
+        document.querySelector('#display').appendChild(todoContainer);
+
+        // add todos to #todo-container
+        todoList.forEach((todo) => {
+            const todoDiv = makeTodoDiv(todo);
+            todoContainer.appendChild(todoDiv);
+        });
+
         // Make a button for adding a new todo
-        const newTodoButton = makeAddNewTodoButton(project.index);
-        newTodoContainer.appendChild(newTodoButton);
+        const newTodoButton = makeAddNewTodoButton(projIndex);
+        todoContainer.appendChild(newTodoButton);
     };
 
     const displayProjects = (userData) => {
@@ -542,7 +475,7 @@ const displayContent = () => {
             projectContainer.appendChild(projectButton);
         });
     };
-    return { displayProjects, displayAllTodos, displayTodos, displayData };
+    return { displayProjects, displayTodos, displayData };
 };
 
 // Produces modals specific for the reqquired action (login, new project, new todo, edit todo)
@@ -697,32 +630,9 @@ const inputInformation = () => {
     return { logInModal, newProjectModal, newTodoModal, modifyTodoModal };
 };
 
-/*
-// Start including default
-const startProgram = (username) => {
-    // Create a new localStorage if the username isn't recognized. 'Default' will load default data
-    if (!localStorage.getItem(username)) {
-        if (username === 'default') {
-            console.log('creating default');
-            let defaultData = dummyDataHandler().makeDummyProjectList(3);
-            const defaultJson = JSON.stringify(defaultData);
-            localStorage.setItem(username, defaultJson);
-        } else {
-            console.log('creating new user..');
-            let defaultData = [];
-            const defaultJson = JSON.stringify(defaultData);
-            localStorage.setItem(username, defaultJson);
-        }
-    }
-
-    const jsonData = localStorage.getItem(`${username}`);
-    let userData = JSON.parse(jsonData);
-}
-*/
-
-// Start including default
+// Start
 const userData = (username) => {
-    // Create a new localStorage if the username isn't recognized. 'Default' will load default data
+    // Create a new localStorage if the username isn't recognized. 'Default' has been added already and will load default data
     if (!localStorage.getItem(username)) {
         console.log('creating new user..');
         let defaultData = [];
@@ -730,19 +640,15 @@ const userData = (username) => {
         localStorage.setItem(username, defaultJson);
     }
 
-    const jsonData = localStorage.getItem(`${username}`);
+    const jsonData = localStorage.getItem(username);
     let userData = JSON.parse(jsonData);
 
     const displayUserProjects = () => {
         displayContent().displayProjects(userData);
     };
 
-    const displayUserAllTodos = () => {
-        displayContent().displayAllTodos(userData);
-    };
-
     const displayUserTodos = (projIndex) => {
-        displayContent().displayTodos(userData[projIndex]);
+        displayContent().displayTodos(projIndex, userData);
     };
 
     const displayUserData = (splitIndex) => {
@@ -792,13 +698,13 @@ const userData = (username) => {
         saveData(userData);
     };
 
-    const editTodo = (splitIndex, selectedIndex, newTodo) => {
+    const editTodo = (splitIndex, todoProjIndex, editTodo) => {
         // determine if the user wants to move the todo to a new project
         // same project, remove the current entry and add it to the same location
-        if (splitIndex[0] == selectedIndex) {
+        if (splitIndex[0] == todoProjIndex) {
             // keeps the same index
-            newTodo.index = splitIndex[1];
-            userData[splitIndex[0]].data.splice(splitIndex[1], 1, newTodo);
+            editTodo.index = splitIndex[1];
+            userData[splitIndex[0]].data.splice(splitIndex[1], 1, editTodo);
             // different project, so remove one entry, then add it to the correct project
         } else {
             // this removes an entry from a project. This means todo.index will no longer match the postition.
@@ -809,8 +715,8 @@ const userData = (username) => {
             });
 
             // find the new position for the todo in the other project
-            newTodo.index = userData[selectedIndex].data.length;
-            userData[selectedIndex].data.push(newTodo);
+            editTodo.index = userData[todoProjIndex].data.length;
+            userData[todoProjIndex].data.push(editTodo);
         }
 
         saveData(userData);
@@ -840,7 +746,6 @@ const userData = (username) => {
 
     return {
         displayUserProjects,
-        displayUserAllTodos,
         displayUserTodos,
         displayUserData,
         newProject,
@@ -854,7 +759,7 @@ const userData = (username) => {
     };
 };
 
-// adds eventListeners controls their actions
+// adds eventListeners & control their actions
 const userInterface = (username) => {
     const user = userData(username);
 
@@ -886,30 +791,43 @@ const userInterface = (username) => {
             }
             tempTodo.push(field.value);
         });
-        const newTodo = {};
-        const newProjIndex =
-            document.querySelector('.modal-dropdown').selectedIndex;
-        newTodo.name = tempTodo[0];
-        newTodo.desc = tempTodo[1];
-        newTodo.duedate = tempTodo[2];
-        newTodo.notes = tempTodo[3];
-        //removeModal();
-        // Depending on if the modal comes from newTodo or editTodo, the result is slightly different
+        const newTodo = {
+            name: tempTodo[0],
+            desc: tempTodo[1],
+            duedate: tempTodo[2],
+            notes: tempTodo[3],
+        };
 
-        // Find out the current setting for displaying projects
-        const projDisplayIndex =
+        // todos dont store the parent projIndex as an attribute, but need it for adding to the database
+        // isn't necessarily the same as .selected-project, if the user changes the project in the dropdown menu
+        const todoProjIndex =
+            document.querySelector('.modal-dropdown').selectedIndex;
+
+        // Find out the current settings for displaying projects
+        const projIndex =
             document.querySelector('.selected-project').dataset.projIndex;
-        const dateDisplayIndex =
+        const dateIndex =
             document.querySelector('.selected-date').dataset.dateIndex;
 
+        // Want to refresh the page to 'all' if selected, or the project of the new todo if 'all' isn't selected
         if (modalType == 'new') {
-            user.newTodo(newProjIndex, newTodo);
-            refreshPage(projDisplayIndex, dateDisplayIndex);
+            user.newTodo(todoProjIndex, newTodo);
+
+            if (projIndex === 'all') {
+                refreshPage(projIndex, dateIndex);
+            } else {
+                refreshPage(todoProjIndex, dateIndex);
+            }
         }
 
         if (modalType == 'edit') {
-            user.editTodo(splitIndex, newProjIndex, newTodo);
-            refreshPage(projDisplayIndex, dateDisplayIndex);
+            user.editTodo(splitIndex, todoProjIndex, newTodo);
+
+            if (projIndex === 'all') {
+                refreshPage(projIndex, dateIndex);
+            } else {
+                refreshPage(todoProjIndex, dateIndex);
+            }
         }
     };
 
@@ -942,21 +860,23 @@ const userInterface = (username) => {
         // Enable closing of the modal by clicking on an area outside
         window.addEventListener('click', removeModalWindow);
 
-        // find the current date sort option
-        const dateDisplayIndex =
-            document.querySelector('.selected-date').dataset.dateIndex;
-
         // Retrieve the value after enter is pressed
         inputField.addEventListener('keypress', (event) => {
             if (event.key === 'Enter') {
                 if (!inputField.value) {
                     return;
                 } else {
-                    const newProject = {};
-                    newProject.name = inputField.value;
-                    newProject.data = [];
-                    projIndex = user.newProject(newProject);
-                    refreshPage(projIndex, dateDisplayIndex);
+                    const newProject = {
+                        name: inputField.value,
+                        data: [],
+                    };
+                    const projIndex = user.newProject(newProject);
+
+                    // find the current date sort option
+                    const dateIndex =
+                        document.querySelector('.selected-date').dataset
+                            .dateIndex;
+                    refreshPage(projIndex, dateIndex);
                 }
             }
         });
@@ -964,12 +884,12 @@ const userInterface = (username) => {
 
     // ClickHandler functions: edit todo, todo, project, date
     // They control what happens when a button is clicked by retrieving dataset values
-    // The todoIndeces dataset is made up of two parts: project-todo
+    // The projIndexTodoIndex dataset is made up of two indeces
 
     // since there is only one option, didn't make a clickDel function
-    const delClickHandler = (e) => {
-        const todoIndeces = e.target.dataset.del;
-        const splitIndex = todoIndeces.split('-');
+    const todoDelClickHandler = (e) => {
+        const projIndexTodoIndex = e.target.dataset.del;
+        const splitIndex = projIndexTodoIndex.split('-');
         user.removeTodo(splitIndex);
 
         // Find the current date and project display options
@@ -982,8 +902,8 @@ const userInterface = (username) => {
 
     // since there is only one option, didn't make a clickEdit function
     const editClickHandler = (e) => {
-        const todoIndeces = e.target.dataset.edit;
-        const splitIndex = todoIndeces.split('-');
+        const projIndexTodoIndex = e.target.dataset.edit;
+        const splitIndex = projIndexTodoIndex.split('-');
         user.editTodoModal(splitIndex);
 
         window.addEventListener('click', removeModalWindow);
@@ -997,8 +917,8 @@ const userInterface = (username) => {
 
     // todo may be 'new' or one of the named todo's
     const todoClickHandler = (e) => {
-        const todoIndeces = e.target.dataset.todoIndeces;
-        const splitIndex = todoIndeces.split('-');
+        const projIndexTodoIndex = e.target.dataset.projIndexTodoIndex;
+        const splitIndex = projIndexTodoIndex.split('-');
 
         // either create a new todo, or display the data relevant to the clicked todo (and set up the edit button)
         if (splitIndex[1] === 'new') {
@@ -1006,7 +926,7 @@ const userInterface = (username) => {
             clickNewTodo(splitIndex[0]);
         } else {
             user.displayUserData(splitIndex);
-            // set up listeners for editing and deleting
+            // set up listener for editing
             document
                 .querySelector('.todo-edit-button')
                 .addEventListener('click', editClickHandler);
@@ -1015,23 +935,23 @@ const userInterface = (username) => {
 
     // Changes the highlighted project in the menu
     // The dataset dateIndex will become relevant when the page is refreshed
-    const dateSelection = (dateDisplayIndex) => {
+    const dateSelection = (dateIndex) => {
         document
             .querySelector('.selected-date')
             .classList.remove('selected-date');
 
         document
-            .querySelector(`[data-date-index="${dateDisplayIndex}"]`)
+            .querySelector(`[data-date-index="${dateIndex}"]`)
             .classList.add('selected-date');
     };
 
     const dateClickHandler = (e) => {
-        const dateDisplayIndex = e.target.dataset.dateIndex;
-        dateSelection(dateDisplayIndex);
+        const dateIndex = e.target.dataset.dateIndex;
+        dateSelection(dateIndex);
 
-        const projDisplayIndex =
+        const projIndex =
             document.querySelector('.selected-project').dataset.projIndex;
-        refreshPage(projDisplayIndex, dateDisplayIndex);
+        refreshPage(projIndex, dateIndex);
     };
 
     // Changes the highlighted project in the menu
@@ -1053,28 +973,11 @@ const userInterface = (username) => {
         if (projIndex === 'new') {
             console.log('creating new project');
             clickNewProject();
-        } else if (projIndex === 'all') {
-            projectSelection(projIndex);
-            user.displayUserAllTodos();
-
-            document.querySelectorAll('.todo').forEach((button) => {
-                button.addEventListener('click', todoClickHandler);
-            });
-
-            document.querySelectorAll('.todo-del-button').forEach((button) => {
-                button.addEventListener('click', delClickHandler);
-            });
         } else {
             projectSelection(projIndex);
-            user.displayUserTodos(projIndex);
-
-            document.querySelectorAll('.todo').forEach((button) => {
-                button.addEventListener('click', todoClickHandler);
-            });
-
-            document.querySelectorAll('.todo-del-button').forEach((button) => {
-                button.addEventListener('click', delClickHandler);
-            });
+            const dateIndex =
+                document.querySelector('.selected-date').dataset.dateIndex;
+            refreshPage(projIndex, dateIndex);
         }
     };
 
@@ -1104,41 +1007,37 @@ const userInterface = (username) => {
 
         // Find the current date display option
 
-        const dateDisplayIndex =
+        const dateIndex =
             document.querySelector('.selected-date').dataset.dateIndex;
-        refreshPage('all', dateDisplayIndex);
+        refreshPage('all', dateIndex);
     };
 
     // loads the starting application screen
-    const refreshPage = (projDisplayIndex, dateDisplayIndex) => {
+    const refreshPage = (projIndex, dateIndex) => {
+        // if a modal is present, remove it
         removeModal();
+
+        // re-create the home screen
         document.querySelector('#full-container').remove();
         createPageLayout().createBasicDom();
+
         document.querySelector('#header').textContent = `Welcome, ${username}`;
 
-        // Show display the projects in the user's database
+        // Display the projects in the user's database
         user.displayUserProjects();
 
         // Highlight the 'remembered' date selection option
         document
-            .querySelector(`[data-date-index="${dateDisplayIndex}"]`)
+            .querySelector(`[data-date-index="${dateIndex}"]`)
             .classList.add('selected-date');
 
         // Highlight the 'remembered' project selection option
         document
-            .querySelector(`[data-proj-index="${projDisplayIndex}"]`)
+            .querySelector(`[data-proj-index="${projIndex}"]`)
             .classList.add('selected-project');
 
-        // Display the todos based on the filter options
-
-        //    const dateSelectIndex =
-        //document.querySelector('.selected-project').dataset.selectIndex;
-
-        if (projDisplayIndex === 'all') {
-            user.displayUserAllTodos();
-        } else {
-            user.displayUserTodos(projDisplayIndex);
-        }
+        // Display whichever todos make it through the filter options
+        user.displayUserTodos(projIndex);
 
         // Add event listeners to the relevent buttons.
 
@@ -1176,12 +1075,11 @@ const userInterface = (username) => {
             button.addEventListener('click', todoClickHandler);
         });
         document.querySelectorAll('.todo-del-button').forEach((button) => {
-            button.addEventListener('click', delClickHandler);
+            button.addEventListener('click', todoDelClickHandler);
         });
     };
 
     // For the first load, show the todos from every project
-
     refreshPage('all', 'all');
 };
 

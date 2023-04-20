@@ -1,0 +1,95 @@
+.project click -> projectClickHandler
+.proj-del-button click -> projectDelClickHandler
+
+.date-item click -> dateClickHandler
+
+.todo click -> todoClickHandler
+.todo-del-button click -> delTodoClickHandler
+
+.proj-button-container mouseover -> projectMouseInHandler
+.proj-button-container mouseleave -> projectMouseOutHandler
+
+---------------------
+dateClickHandler(e)
+	e.target.dataset.dateIndex
+	dateSelection(dateIndex)
+	get projIndex from .selected-project
+	refreshPage(projIndex, dateIndex)
+---------------------
+projectClickHandler(e)
+	e.target.dataset.projIndex
+	if new:
+		clickNewProject()
+	if not:
+		projectSelection(projIndex)
+		get dateIndex from .selected-date
+		refreshPage(projIndex, dateIndex)
+	---------------------
+	clickNewProject()
+		inputInformation().newProjectModal()
+		.modal-input-field.focus()
+		window.eventListener('click', removeModalWindow)
+		.modal-input-field.eventListener(enter)
+		on enter:
+			newproject.name = .modal-input-field, .data = []
+			user.newProject(newProject) // projIndex is returned
+				get projIndex from userData.length
+				userData.push(newProject)
+				saveData(userData)
+			get dateIndex from .selected-date
+			refreshPage(projIndex, dateIndex)
+---------------------
+todoClickHandler(e)
+	e.target.dataset.projIndexTodoIndex for splitIndex
+	if todoIndex new:
+		clickNewTodo(projIndex)
+	if not:
+		user.displayUserData(splitIndex)
+		.todo-edit-button.eventListener click -> editClickHandler
+	---------------------
+	clickNewTodo(projIndex)
+		user.newTodoModal(projIndex)
+		.modal-input-field.focus() // will focus the top field
+		window.eventListener('click', removeModalWindow)
+		.modal-submit-button.eventListener click -> obtainTodoModalData('new')
+	---------------------
+	clickEditHandler(e)
+		e.target.dataset.edit for splitIndex
+		editTodoModal(splitIndex)
+		window.eventListener('click', removeModalWindow)
+		.modal-submit-button click -> obtainTodoModalData('edit')
+		---------------------
+		obtainTodoModalData('new'/'edit')
+		.modal-input-field.forEach(tempTodo.push(value))
+		input data into newTodo{}
+		.modal-dropdown.selectedindex for project of the new todo
+		.selected-project and .selected-date for projIndex/dateIndex
+		if 'new':
+			user.newTodo(todoProjIndex, newTodo)
+				find todo.index from userData[projIndex].data.length
+				userData[projIndex].data.push(newTodo)
+				saveData(userData)
+			refreshPage(projIndex/todoProjIndex, dateIndex)
+		if 'edit':
+			user.editTodo(splitIndex, todoProjIndex, newTodo) // newTodo->editTodo
+				if same project:
+					editTodo.index = todoIndex
+					userData[projIndex].data.splice(todoIndex, 1, editTodo); // remove and re-add
+				otherwise:
+					userData[projIndex].data.splice([todoIndex], 1); // remove the stored todo
+					userData[projIndex].data.forEach(todo, index) to re-allocate todo.indeces
+					editTodo.index = userData[todoProjIndex].data.length; // new position for editied todo
+					userData[todoProjIndex].data.push(editTodo)
+				saveData(userData)
+			refreshPage(projIndex/todoProjIndex, dateIndex)
+	---------------------
+	displayUserData(splitIndex)
+		displayContent().displayData(userData[projIndex].data[todoIndex], splitIndex)
+			currentTodo = .dataset-splitIndex
+			toggleOpenTodo(currentTodo) // closes current todo if open
+			resetOpenTodo() // closes a different todo if open
+			add .current-todo to currentTodo
+			create dataContainer/.open-todo, insertAdjacent to currentTodo
+			create & append todo.desc, todo.notes todo-data divs to .open-todo
+			create & append .todo-edit-button with dataset.edit = projIndex-todoIndex
+---------------------

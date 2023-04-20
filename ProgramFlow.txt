@@ -1,0 +1,55 @@
+createDefaultData().saveDataSet() // makes 'Default' data set based off of to the current day
+createPageLayout().createBasicDom() // creates the home screen
+logIn()
+	inputInformation().logInModal()
+		createModal()
+	addEventListener(enter): 
+        userInterface(username)
+--------------------------------------
+on enter:
+
+userInterface(username)
+	user = userData(username) // user is an instance of the object userData
+		user is new? localStorage.setItem(username, [])
+	logcalStorage.getItem(username)
+	refreshPage(projDisplayIndex, dateDisplayIndex) // 'all','all' on first run
+		removeModal()
+		remove #full-container // remove the home HTML
+		createPageLayout.createBasicDom() // .date-item.dataset.dateIndex = 'all'/'week'/'day'/'past', .project.dataset.projIndex = 'all'/'new'
+		#header.textContent = Welcome, username
+
+		user.displayUserProjects()
+			displayContent().displayProjects(userData)
+				create #project-container
+				userData.forEach(project)
+					makeProjectButton(project)
+						.proj-button-container; dataset.projIndex=project.index
+						.project; text = project.name, dataset.projIndex = project.index
+						.proj-del-button; dataset.projDel = project.index
+					append to #project-container
+        assign .selected-project to dataset-projIndex = 'all'
+		assign .selected-date to dataset-dateIndex = 'all'
+
+        user.dislayUserTodos()
+            dislayTodos(userData)
+                retrieve projSelected from .project-selected
+                getTodoList(userData, projSelected) // replicate todos in a new array (only the projSelected-relevent ones)
+                    forEach(todo): todoList.push(makeDuplicateTodo(todo, project.index / projSelected)) // todos in the list have projIndex
+                retrieve dateSelected from .date-selected
+                filterByDate(todoList, dateSelected) // filter by the time period selected
+                sortByDate(todoList) // simple sorting function done on todo.duedate
+                flagDateColorCoding // add todo.dateFlag as appropriate (today, tomorrow, past)
+                resetTodo() for fresh #todo-container
+                todoList.forAll(todo)
+                    makeTodoDiv(todo)
+                    append to #todo-container
+                makeAddNewTodoButton(projSelected)
+
+		.project eventListeners
+		.proj-del-button eventListeners
+        .proj-button-container eventListeners
+		.date-item eventListeners
+		.todo eventListeners
+		.todo-del-button eventListeners
+
+--------------------------------------

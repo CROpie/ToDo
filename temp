@@ -1,0 +1,48 @@
+const createElementWithClass = (className, text) => {
+    const newElement = document.createElement('div');
+    newElement.classList.add(className);
+    newElement.textContent = text;
+    return newElement;
+};
+
+const displayData = (todo, splitIndex) => {
+    // close and return if the selected todo is already displayed (ie toggle)
+    const currentTodo = document.querySelector(
+        `[data-proj-index-todo-index="${splitIndex[0]}-${splitIndex[1]}"]`
+    );
+
+    if (!toggleOpenTodo(currentTodo)) {
+        return;
+    }
+    currentTodo.classList.add('current-todo');
+
+    // make a new container for data and display it
+
+    const dataContainer = createElementWithClass('open-todo');
+    currentTodo.insertAdjacentElement('afterend', dataContainer);
+
+    const dataArea = createElementWithClass('open-todo-area');
+    dataContainer.appendChild(dataArea);
+
+    dataArea.appendChild(createElementWithClass('todo-data', todo.desc));
+    dataArea.appendChild(createElementWithClass('todo-data', todo.desc));
+    /*
+        const dataContainer = makeOpenTodo(currentTodo);
+        const dataArea = document.createElement('div');
+        dataArea.classList.add('open-todo-data');
+        dataContainer.appendChild(dataArea);
+
+        const dataDesc = document.createElement('div');
+        dataDesc.classList.add('todo-data');
+        dataDesc.textContent = todo.desc;
+        dataArea.appendChild(dataDesc);
+
+        const dataNotes = document.createElement('div');
+        dataNotes.classList.add('todo-data');
+        dataNotes.textContent = todo.notes;
+        dataArea.appendChild(dataNotes);
+        */
+
+    const modifyButton = makeEditButton(splitIndex);
+    dataContainer.appendChild(modifyButton);
+};
