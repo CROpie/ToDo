@@ -17,6 +17,8 @@ body {
 
 }
 
+
+
 #full-container {
     width: 100%;
     height: 100%;
@@ -73,6 +75,7 @@ body {
 }
 
 #project-container {
+    max-width: 100%;
 }
 
 .project {
@@ -103,6 +106,22 @@ body {
 
 .proj-button-container:hover {
     background-color: blueviolet;
+}
+
+.proj-input-field:empty:before {
+
+  }
+
+.proj-input-field {
+    font-size: 2rem;
+    max-width: 100%;
+    color: white;
+    background-color: transparent;
+    padding-left: 2rem;
+    flex: 1;
+    white-space:pre-wrap;
+    display: inline-block;
+    box-shadow:0 0 10px #9ecaed;
 }
 
 .proj-del-button {
@@ -140,7 +159,7 @@ body {
     background-size: cover;
     background-repeat: no-repeat;
     background-attachment: fixed;
-    background-position: 200px;
+    background-position: 200px;    
 }
 
 
@@ -189,7 +208,7 @@ body {
 }
 
 #new-todo {
-    color: greenyellow
+    color: greenyellow;
 }
 
 .todo:hover {
@@ -204,9 +223,22 @@ body {
     margin-top: 2rem;
 }
 
+.input-new-container:hover,
+.input-new-container:active,
+.input-new-container {
+    background-color: rgba(138, 43, 226, 0.7);
+}
+
+.input-edit-container:hover,
+.input-edit-container:active,
+.input-edit-container {
+    background-color: rgba(138, 43, 226, 0.7);
+}
+
 .todo-name {
     flex: 1;
     pointer-events: none;
+    z-index: 12;
 }
 
 .todo-date {
@@ -224,12 +256,16 @@ body {
     color: orange;
 }
 
+.date-day-after-tomorrow {
+    color: yellow;
+}
+
 .date-past {
-    color: darkred;
+    color: grey;
 }
 
 .todo-del-button {
-    padding: 0.5rem;
+    padding-right: 0.5rem;
 }
 
 .todo-del-button:hover {
@@ -257,6 +293,86 @@ body {
 
 }
 
+#date-input-field {
+    background-color: transparent;
+    color: white;
+    font-size: 1rem;
+}
+
+.todo-input-field,
+#project-dropdown,
+.todo-edit-field,
+#edit-project-dropdown {
+    margin-left: -1rem;
+    padding-left: 1rem;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+    border-radius: 7px;
+}
+
+/* set up a white glow border for input data fields, which is removed on typing */
+/* #project-dropdown & #date-input-field need an eventListener change => add dataset=chosen to get it to work*/
+.todo-input-field:empty,
+#project-dropdown {
+    outline: 1px solid white;
+    border: 1px solid black;
+    box-shadow:0 0 10px #9ecaed;
+}
+
+
+.todo-input-field,
+#project-dropdown[data-chosen],
+#date-input-field[data-chosen] {
+    box-shadow: none;
+    outline: none;
+    border: none;
+}
+
+/* */
+
+
+.todo-edit-field,
+#edit-project-dropdown {
+    outline: 1px solid white;
+    border: 1px solid black;
+    box-shadow:0 0 10px #9ecaed;
+}
+
+#project-dropdown,
+#edit-project-dropdown {
+    background-color: transparent;
+    font-size: 1.5rem;
+}
+
+/* https://stackoverflow.com/questions/13694271/modify-select-so-only-the-first-one-is-gray */
+
+.todo-input-field:empty:before {
+    content:attr(data-placeholder);
+    color:grey;
+}
+
+select {
+    font-size: 1.5rem;
+    color: orange;
+
+}
+option {
+    color: white;
+    background-color: black;
+}
+
+option:checked {
+    color: orange;
+}
+option:hover {
+    background-color: blueviolet;
+}
+
+select:invalid,
+select option[value=""] {
+    color: grey;    
+}
+
 .open-todo-data {
     flex: 1;
     word-wrap: break-word;
@@ -272,7 +388,8 @@ body {
     color: rgb(255, 221, 0)
 }
 
-.todo-edit-button {
+.todo-edit-button,
+.todo-submit-button {
     padding: 0.5rem;
     font-size: 1.5rem;
     background-color: transparent;
@@ -280,6 +397,10 @@ body {
 
 .todo-edit-button:hover {
     color: red;
+}
+
+.todo-submit-button:hover {
+    color: lime;
 }
 
 /* CSS related to Modal */
@@ -332,6 +453,10 @@ body {
     cursor: pointer;
   }
 
+.login-note {
+    color: brown;
+    font-size: 0.75rem;
+}
 
 .modal-input-div {
     flex: 1;
@@ -386,16 +511,4 @@ body {
 .modal-submit-button:active {
     background-color: lightblue;
     color: black;
-}
-
-#project-dropdown {
-    color: black;
-}
-
-#project-dropdown > * {
-    color: black;
-}
-
-.option-dropdown {
-    background-color: yellow;
 }

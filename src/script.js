@@ -171,7 +171,7 @@ const displayContent = () => {
         projectButtonContainer.appendChild(projectButton);
 
         const delButton = document.createElement('div');
-        delButton.textContent = 'X';
+        delButton.textContent = '✘';
         delButton.dataset.projDel = project.index;
         delButton.classList.add('proj-del-button');
         projectButtonContainer.appendChild(delButton);
@@ -206,7 +206,7 @@ const displayContent = () => {
 
     const makeDelButton = (projIndex, todoIndex) => {
         const delButton = document.createElement('div');
-        delButton.textContent = 'X';
+        delButton.textContent = '✘';
         delButton.dataset.del = `${projIndex}-${todoIndex}`;
         delButton.classList.add('todo-del-button');
         return delButton;
@@ -231,6 +231,9 @@ const displayContent = () => {
         } else if (todo.dateFlag == 'tommorrow') {
             todoDate.textContent = 'Tomorrow';
             todoDate.classList.add('date-tomorrow');
+        } else if (todo.dateFlag == 'dayaftertomorrow') {
+            todoDate.textContent = 'Day after tomorrow';
+            todoDate.classList.add('date-day-after-tomorrow');
         } else if (todo.dateFlag == 'past') {
             todoDate.textContent = prettyDate(todo.duedate);
             todoDate.classList.add('date-past');
@@ -243,15 +246,6 @@ const displayContent = () => {
         todoDiv.appendChild(delButton);
 
         return todoDiv;
-    };
-
-    const makeAddNewTodoButton = (projIndex) => {
-        const newTodoButton = document.createElement('div');
-        newTodoButton.dataset.projIndexTodoIndex = `${projIndex}-new`;
-        newTodoButton.classList.add('todo');
-        newTodoButton.setAttribute('id', 'new-todo');
-        newTodoButton.textContent = 'New Todo';
-        return newTodoButton;
     };
 
     // A function to move today's date forward by length 'interval'
@@ -412,6 +406,7 @@ const displayContent = () => {
     const flagDateColorCoding = (todoList) => {
         const dateToday = todayPlusInterval(0);
         const dateTomorrow = todayPlusInterval(1);
+        const dateDayAfterTomorrow = todayPlusInterval(2);
 
         todoList.forEach((todo) => {
             // Flag certain todo dates for text and colour alterations
@@ -419,11 +414,50 @@ const displayContent = () => {
                 todo.dateFlag = 'today';
             } else if (todo.duedate == dateTomorrow) {
                 todo.dateFlag = 'tommorrow';
+            } else if (todo.duedate == dateDayAfterTomorrow) {
+                todo.dateFlag = 'dayaftertomorrow';
             } else if (todo.duedate < dateToday) {
                 todo.dateFlag = 'past';
             }
         });
         return todoList;
+    };
+
+    const makeAddNewTodoButton = (projIndex) => {
+        const todoDiv = document.createElement('div');
+        todoDiv.dataset.projIndexTodoIndex = `${projIndex}-new`;
+        todoDiv.classList.add('todo');
+        todoDiv.setAttribute('id', 'new-todo');
+
+        const todoName = document.createElement('div');
+        todoName.classList.add('todo-name');
+        todoName.textContent = 'New Todo';
+        todoDiv.appendChild(todoName);
+
+        // this div is just used to ensure the same spacing as a regular todo panel
+        const todoDate = document.createElement('div');
+        todoDate.classList.add('todo-date');
+        todoDiv.appendChild(todoDate);
+
+        return todoDiv;
+    };
+
+    const makeEditTodoButton = (splitIndex, todoData) => {
+        const todoDiv = document.createElement('div');
+        todoDiv.dataset.projIndexTodoIndex = `${splitIndex[0]}-${splitIndex[1]}`;
+        todoDiv.classList.add('todo');
+        todoDiv.setAttribute('id', 'edit-todo');
+
+        const todoName = document.createElement('div');
+        todoName.classList.add('todo-name');
+        todoName.textContent = todoData.name;
+        todoDiv.appendChild(todoName);
+
+        const todoDate = document.createElement('div');
+        todoDate.classList.add('todo-date');
+        todoDiv.appendChild(todoDate);
+
+        return todoDiv;
     };
 
     const displayTodos = (projIndex, userData) => {
@@ -454,15 +488,15 @@ const displayContent = () => {
         const todoContainer = resetTodo();
         document.querySelector('#display').appendChild(todoContainer);
 
+        // Make a button for adding a new todo
+        const newTodoButton = makeAddNewTodoButton(projIndex);
+        todoContainer.appendChild(newTodoButton);
+
         // add todos to #todo-container
         todoList.forEach((todo) => {
             const todoDiv = makeTodoDiv(todo);
             todoContainer.appendChild(todoDiv);
         });
-
-        // Make a button for adding a new todo
-        const newTodoButton = makeAddNewTodoButton(projIndex);
-        todoContainer.appendChild(newTodoButton);
     };
 
     const displayProjects = (userData) => {
@@ -475,10 +509,19 @@ const displayContent = () => {
             projectContainer.appendChild(projectButton);
         });
     };
-    return { displayProjects, displayTodos, displayData };
+    return {
+        displayProjects,
+        displayTodos,
+        displayData,
+        makeProjectButton,
+        resetOpenTodo,
+        createElementWithClass,
+        makeAddNewTodoButton,
+        makeEditTodoButton,
+    };
 };
 
-// Produces modals specific for the reqquired action (login, new project, new todo, edit todo)
+// Produces a modal for logging in, as well as modifying the home page to allow for direct addition/editing of data
 const inputInformation = () => {
     // Note: returns formContainer so that input fields can be easily added
     const createModal = () => {
@@ -516,118 +559,199 @@ const inputInformation = () => {
         return inputContainer;
     };
 
-    const modalDate = (text) => {
-        const inputContainer = document.createElement('div');
-        inputContainer.classList.add('modal-input-div');
-
-        const inputTitle = document.createElement('div');
-        inputTitle.classList.add('modal-input-title');
-        inputTitle.textContent = text;
-        inputContainer.appendChild(inputTitle);
-
+    const inputDate = () => {
         const inputField = document.createElement('input');
         inputField.setAttribute('type', 'date');
-        inputField.classList.add('modal-input-field');
-        inputContainer.appendChild(inputField);
-
-        return inputContainer;
-    };
-
-    // Returns a button to allow for data submission
-    const modalSubmitButton = () => {
-        const submitButton = document.createElement('button');
-        submitButton.setAttribute('type', 'button');
-        submitButton.classList.add('modal-submit-button');
-        submitButton.textContent = 'Submit';
-        return submitButton;
-    };
-
-    // Decided to not use, clicking outside the box will be sufficient
-    const modalCloseButton = () => {
-        const closeButton = document.createElement('span');
-        closeButton.classList.add('close-button');
-        closeButton.textContent = 'X';
-        return closeButton;
-    };
-
-    const modalDropdown = (projectList) => {
-        const inputContainer = document.createElement('div');
-        inputContainer.classList.add('modal-input-div');
-
-        const inputTitle = document.createElement('div');
-        inputTitle.classList.add('modal-input-title');
-        inputTitle.textContent = 'Choose associated project';
-        inputContainer.appendChild(inputTitle);
-
-        const dropdown = document.createElement('select');
-        dropdown.setAttribute('id', 'project-dropdown');
-        dropdown.classList.add('modal-dropdown');
-        projectList.forEach((project, index) => {
-            const option = document.createElement('option');
-            option.classList.add('dropdown-option');
-            option.value = index;
-            option.textContent = project;
-            dropdown.appendChild(option);
+        inputField.setAttribute('id', 'date-input-field');
+        inputField.classList.add('todo-input-field');
+        inputField.addEventListener('change', () => {
+            inputField.dataset.chosen = inputField.value;
         });
-        inputContainer.appendChild(dropdown);
-        return inputContainer;
+
+        return inputField;
+    };
+
+    const inputDropdown = (type, projectList) => {
+        const dropdown = document.createElement('select');
+
+        if (type === 'new') {
+            dropdown.setAttribute('id', 'project-dropdown');
+            dropdown.addEventListener('change', () => {
+                dropdown.dataset.chosen = dropdown.value;
+            });
+            //dropdown.dataset.chosen = this.value;
+            dropdown.required = true; // necessary for displaying the css properly (greyed out unable to select the first option)
+
+            let option = document.createElement('option');
+            option.classList.add('dropdown-option');
+            option.value = '';
+            option.textContent = 'Choose project: ';
+            option.selected = true;
+            option.disabled = true;
+
+            dropdown.appendChild(option);
+            projectList.forEach((project, index) => {
+                const option = document.createElement('option');
+                option.classList.add('dropdown-option');
+                option.value = index;
+                option.textContent = project;
+                dropdown.appendChild(option);
+            });
+        } else if (type === 'edit') {
+            dropdown.setAttribute('id', 'edit-project-dropdown');
+            projectList.forEach((project, index) => {
+                const option = document.createElement('option');
+                option.classList.add('dropdown-option');
+                option.value = index;
+                option.textContent = project;
+                dropdown.appendChild(option);
+            });
+        }
+        return dropdown;
     };
 
     const logInModal = () => {
         const formContainer = createModal();
         const inputNameContainer = modalInput('Username:');
         formContainer.appendChild(inputNameContainer);
+        const noteText = document.createElement('div');
+        noteText.textContent =
+            "Note: enter 'Default' to generate date-relevent sample data.";
+        noteText.classList.add('login-note');
+        formContainer.appendChild(noteText);
     };
 
-    const newProjectModal = () => {
-        //resetPage();
-        const formContainer = createModal();
-        const inputNameContainer = modalInput('Name of new Project:');
-        formContainer.appendChild(inputNameContainer);
+    const inputProjectField = () => {
+        const projectButtonContainer = document.createElement('div');
+        projectButtonContainer.classList.add('proj-button-container');
+
+        const projectButton = document.createElement('div');
+        projectButton.contentEditable = 'true';
+        projectButton.dataset.placeholder = 'Project Name:';
+        projectButton.classList.add('proj-input-field');
+        projectButtonContainer.appendChild(projectButton);
+
+        return projectButtonContainer;
     };
 
-    const newTodoModal = (projIndex, projectList) => {
-        const formContainer = createModal();
-
-        const selectProjectDropdown = modalDropdown(projectList);
-        formContainer.appendChild(selectProjectDropdown);
-
-        if (projIndex !== 'all') {
-            document.querySelector('#project-dropdown').selectedIndex =
-                projIndex;
-        }
-
-        const inputNameContainer = modalInput('Name of new Todo: ');
-        const inputDescContainer = modalInput('Description: ');
-        const inputDateContainer = modalDate('Due Date: ');
-        const inputNotesContainer = modalInput('Notes: ');
-        const submitButton = modalSubmitButton();
-
-        formContainer.appendChild(inputNameContainer);
-        formContainer.appendChild(inputDescContainer);
-        formContainer.appendChild(inputDateContainer);
-        formContainer.appendChild(inputNotesContainer);
-
-        formContainer.appendChild(submitButton);
+    const newProjectEnhanced = () => {
+        const projContainer = document.querySelector('#project-container');
+        const blankProject = inputProjectField();
+        projContainer.appendChild(blankProject);
     };
 
-    const modifyTodoModal = (todoData, splitIndex, projectList) => {
-        newTodoModal(splitIndex[0], projectList);
-        // populate the fields with the existing data
-        const inputFields = [];
-        document
-            .querySelectorAll('.modal-input-field')
-            .forEach((inputField) => {
-                inputFields.push(inputField);
-            });
+    const newTodoEnhanced = (projIndex, projectList) => {
+        document.querySelector('#new-todo').remove();
+        const todoContainer = document.querySelector('#todo-container');
+        const currentTodo = displayContent().makeAddNewTodoButton(projIndex);
+        currentTodo.classList.add('input-new-container');
+        todoContainer.prepend(currentTodo);
 
-        inputFields[0].value = todoData.name;
-        inputFields[1].value = todoData.desc;
-        inputFields[2].value = todoData.duedate;
-        inputFields[3].value = todoData.notes;
+        const todoDate = inputDate();
+        currentTodo.appendChild(todoDate);
+
+        // If a todo is open, close it
+        displayContent().resetOpenTodo();
+
+        const inputContainer =
+            displayContent().createElementWithClass('open-todo');
+        currentTodo.insertAdjacentElement('afterend', inputContainer);
+
+        const inputArea =
+            displayContent().createElementWithClass('open-todo-data');
+        inputContainer.appendChild(inputArea);
+
+        inputArea.appendChild(
+            displayContent().createElementWithClass('todo-desc', 'Insert data')
+        );
+        inputArea.appendChild(
+            displayContent().createElementWithClass(
+                'todo-notes',
+                'Insert notes'
+            )
+        );
+
+        const todoName = document.querySelector('.todo-name');
+        const todoDesc = document.querySelector('.todo-desc');
+        const todoNotes = document.querySelector('.todo-notes');
+
+        // adding temp classes for use obtaining the data after the submit button is pressed
+        todoName.classList.add('submit-todo-name');
+        todoDesc.classList.add('submit-todo-desc');
+        todoNotes.classList.add('submit-todo-notes');
+        todoDate.classList.add('submit-todo-duedate');
+
+        const inputFields = [todoName, todoDesc, todoNotes];
+        inputFields.forEach((field) => {
+            field.classList.add('todo-input-field');
+            field.contentEditable = 'true';
+            field.textContent = '';
+        });
+        todoName.dataset.placeholder = 'New Todo';
+        todoDesc.dataset.placeholder = 'Description:';
+        todoNotes.dataset.placeholder = 'Notes';
+        todoName.focus();
+
+        const submitButton = displayContent().createElementWithClass(
+            'todo-submit-button',
+            '✔'
+        );
+
+        inputContainer.appendChild(submitButton);
+        const selectProjectDropdown = inputDropdown('new', projectList);
+        inputArea.appendChild(selectProjectDropdown);
     };
 
-    return { logInModal, newProjectModal, newTodoModal, modifyTodoModal };
+    const editTodoEnhanced = (todoData, splitIndex, projectList) => {
+        const currentTodo = document.querySelector('.current-todo');
+        const openTodoData = document.querySelector('.open-todo-data');
+        const editableTodo = displayContent().makeEditTodoButton(
+            splitIndex,
+            todoData
+        );
+
+        editableTodo.classList.add('input-edit-container');
+        currentTodo.insertAdjacentElement('afterend', editableTodo);
+        currentTodo.remove();
+        const todoDate = inputDate();
+        todoDate.classList.add('todo-edit-field');
+        editableTodo.appendChild(todoDate);
+        todoDate.value = todoData.duedate;
+
+        const todoName = editableTodo.childNodes[0];
+        todoName.classList.add('submit-todo-name');
+        const todoDesc = openTodoData.childNodes[0];
+        todoDesc.classList.add('submit-todo-desc');
+        const todoNotes = openTodoData.childNodes[1];
+        todoNotes.classList.add('submit-todo-notes');
+        todoDate.classList.add('submit-todo-duedate');
+
+        const inputFields = [todoName, todoDesc, todoNotes];
+        console.log(inputFields);
+        inputFields.forEach((field) => {
+            field.classList.add('todo-edit-field');
+            field.contentEditable = 'true';
+        });
+
+        const editButton = document.querySelector('.todo-edit-button');
+        const submitButton = displayContent().createElementWithClass(
+            'todo-submit-button',
+            '✔'
+        );
+        editButton.insertAdjacentElement('afterend', submitButton);
+        editButton.remove();
+
+        const selectProjectDropdown = inputDropdown('edit', projectList);
+        openTodoData.appendChild(selectProjectDropdown);
+        selectProjectDropdown.selectedIndex = splitIndex[0];
+    };
+
+    return {
+        logInModal,
+        newTodoEnhanced,
+        editTodoEnhanced,
+        newProjectEnhanced,
+    };
 };
 
 // Start
@@ -658,24 +782,24 @@ const userData = (username) => {
         );
     };
 
-    const editTodoModal = (splitIndex) => {
+    const editTodoOpenStyle = (splitIndex) => {
         const projectList = [];
         userData.forEach((project) => {
             projectList.push(project.name);
         });
-        inputInformation().modifyTodoModal(
+        inputInformation().editTodoEnhanced(
             userData[splitIndex[0]].data[splitIndex[1]],
             splitIndex,
             projectList
         );
     };
 
-    const newTodoModal = (projIndex) => {
+    const newTodoOpenStyle = (projIndex) => {
         const projectList = [];
         userData.forEach((project) => {
             projectList.push(project.name);
         });
-        inputInformation().newTodoModal(projIndex, projectList);
+        inputInformation().newTodoEnhanced(projIndex, projectList);
     };
 
     const removeProject = (projIndex) => {
@@ -698,6 +822,7 @@ const userData = (username) => {
         saveData(userData);
     };
 
+    // Modifies a todo from inputInformation().editTodoEnhanced the array
     const editTodo = (splitIndex, todoProjIndex, editTodo) => {
         // determine if the user wants to move the todo to a new project
         // same project, remove the current entry and add it to the same location
@@ -720,16 +845,20 @@ const userData = (username) => {
         }
 
         saveData(userData);
+        // return the updated splitIndex
+        splitIndex[0] = todoProjIndex;
+        splitIndex[1] = editTodo.index;
+        return splitIndex;
     };
 
-    // Adds the new todo from newTodoModal into the array
+    // Adds the new todo from inputInformation().newTodoEnhanced the array
     const newTodo = (projIndex, newTodo) => {
         newTodo.index = userData[projIndex].data.length;
         userData[projIndex].data.push(newTodo);
         saveData(userData);
     };
 
-    // Adds the new project from inputInformation().newProjectModal into the array
+    // Adds the new project from inputInformation().newProjectEnhanced into the array
     const newProject = (newProject) => {
         newProject.index = userData.length;
         userData.push(newProject);
@@ -751,9 +880,9 @@ const userData = (username) => {
         newProject,
         removeProject,
         removeTodo,
-        editTodoModal,
+        editTodoOpenStyle,
         editTodo,
-        newTodoModal,
+        newTodoOpenStyle,
         newTodo,
         consoleData,
     };
@@ -782,26 +911,41 @@ const userInterface = (username) => {
     // Either for new todos, or when editing one
     // projIndex is here as a parameter so that if it is 'all', all todos will be displayed after submission
     // (rather than just the project selected from the dropdown)
-    // the parameter splitIndex is only used with modalType === 'edit'
-    const obtainTodoModalData = (modalType, splitIndex) => {
-        const tempTodo = [];
-        document.querySelectorAll('.modal-input-field').forEach((field) => {
-            if (!field.value) {
-                // Stop the program somehow? Return doesn't exit the submitButton funcion..
-            }
-            tempTodo.push(field.value);
-        });
+    // the parameter splitIndex is only used with inputType === 'edit'
+    const obtainTodoData = (inputType, splitIndex) => {
         const newTodo = {
-            name: tempTodo[0],
-            desc: tempTodo[1],
-            duedate: tempTodo[2],
-            notes: tempTodo[3],
+            name: document.querySelector('.submit-todo-name').textContent,
+            duedate: document.querySelector('.submit-todo-duedate').value,
+            desc: document.querySelector('.submit-todo-desc').textContent,
+            notes: document.querySelector('.submit-todo-notes').textContent,
         };
 
         // todos dont store the parent projIndex as an attribute, but need it for adding to the database
         // isn't necessarily the same as .selected-project, if the user changes the project in the dropdown menu
-        const todoProjIndex =
-            document.querySelector('.modal-dropdown').selectedIndex;
+        // need to subtract 1 since 'Choose project: ' is index 0
+        let todoProjIndex = 0;
+        if (inputType === 'new') {
+            todoProjIndex =
+                document.querySelector('#project-dropdown').selectedIndex - 1;
+        } else if (inputType === 'edit') {
+            todoProjIndex = document.querySelector(
+                '#edit-project-dropdown'
+            ).selectedIndex;
+        }
+
+        // quick check to make sure the 3 required fields have values
+        if (!newTodo.name) {
+            alert('Please type in a name for the todo');
+            return;
+        }
+        if (!newTodo.duedate) {
+            alert('Please select a date.');
+            return;
+        }
+        if (todoProjIndex === -1) {
+            alert('Please choose a project grouping');
+            return;
+        }
 
         // Find out the current settings for displaying projects
         const projIndex =
@@ -810,7 +954,7 @@ const userInterface = (username) => {
             document.querySelector('.selected-date').dataset.dateIndex;
 
         // Want to refresh the page to 'all' if selected, or the project of the new todo if 'all' isn't selected
-        if (modalType == 'new') {
+        if (inputType === 'new') {
             user.newTodo(todoProjIndex, newTodo);
 
             if (projIndex === 'all') {
@@ -820,13 +964,13 @@ const userInterface = (username) => {
             }
         }
 
-        if (modalType == 'edit') {
-            user.editTodo(splitIndex, todoProjIndex, newTodo);
+        if (inputType === 'edit') {
+            splitIndex = user.editTodo(splitIndex, todoProjIndex, newTodo);
 
             if (projIndex === 'all') {
-                refreshPage(projIndex, dateIndex);
+                refreshPage(projIndex, dateIndex, 'edit', splitIndex);
             } else {
-                refreshPage(todoProjIndex, dateIndex);
+                refreshPage(todoProjIndex, dateIndex, 'edit', splitIndex);
             }
         }
     };
@@ -838,48 +982,74 @@ const userInterface = (username) => {
     // projIndex will either be 'all' or the index of the project in the complete projectList
     const clickNewTodo = (projIndex) => {
         // need to collect the project list to add to a dropdown menu in the modal
-        user.newTodoModal(projIndex);
+        user.newTodoOpenStyle(projIndex);
 
-        document.querySelector('.modal-input-field').focus();
-
-        // Enable closing of the modal by clicking on an area outside
-        window.addEventListener('click', removeModalWindow);
+        document.querySelector('.todo-input-field').focus();
 
         document
-            .querySelector('.modal-submit-button')
+            .querySelector('.todo-submit-button')
             .addEventListener('click', () => {
-                obtainTodoModalData('new');
+                obtainTodoData('new');
             });
     };
 
+    const getProjectName = () => {
+        const projInputField = document.querySelector('.proj-input-field');
+
+        if (!projInputField.textContent) {
+            projInputField.remove();
+        } else {
+            const newProject = {
+                name: projInputField.textContent,
+                data: [],
+            };
+            const projIndex = user.newProject(newProject);
+            // find the current date sort option
+            const dateIndex =
+                document.querySelector('.selected-date').dataset.dateIndex;
+            refreshPage(projIndex, dateIndex);
+        }
+        window.removeEventListener('mouseup', getProjectName);
+    };
+
     const clickNewProject = () => {
-        inputInformation().newProjectModal();
-        const inputField = document.querySelector('.modal-input-field');
+        inputInformation().newProjectEnhanced();
+
+        const inputField = document.querySelector('.proj-input-field');
         inputField.focus();
 
-        // Enable closing of the modal by clicking on an area outside
-        window.addEventListener('click', removeModalWindow);
+        // if the window listener is 'click', it will trigger when clickNewProject itself is triggered
+        window.addEventListener('mouseup', getProjectName);
 
-        // Retrieve the value after enter is pressed
         inputField.addEventListener('keypress', (event) => {
             if (event.key === 'Enter') {
-                if (!inputField.value) {
-                    return;
-                } else {
-                    const newProject = {
-                        name: inputField.value,
-                        data: [],
-                    };
-                    const projIndex = user.newProject(newProject);
-
-                    // find the current date sort option
-                    const dateIndex =
-                        document.querySelector('.selected-date').dataset
-                            .dateIndex;
-                    refreshPage(projIndex, dateIndex);
-                }
+                getProjectName();
             }
         });
+    };
+
+    const resetNewTodo = () => {
+        if (!document.querySelector('.input-new-container')) {
+            return;
+        } else {
+            const projIndex =
+                document.querySelector('.selected-project').dataset.projIndex;
+            const dateIndex =
+                document.querySelector('.selected-date').dataset.dateIndex;
+            refreshPage(projIndex, dateIndex);
+        }
+    };
+
+    const resetEditTodo = () => {
+        if (!document.querySelector('.input-edit-container')) {
+            return;
+        } else {
+            const projIndex =
+                document.querySelector('.selected-project').dataset.projIndex;
+            const dateIndex =
+                document.querySelector('.selected-date').dataset.dateIndex;
+            refreshPage(projIndex, dateIndex);
+        }
     };
 
     // ClickHandler functions: edit todo, todo, project, date
@@ -904,19 +1074,21 @@ const userInterface = (username) => {
     const editClickHandler = (e) => {
         const projIndexTodoIndex = e.target.dataset.edit;
         const splitIndex = projIndexTodoIndex.split('-');
-        user.editTodoModal(splitIndex);
-
-        window.addEventListener('click', removeModalWindow);
+        user.editTodoOpenStyle(splitIndex);
 
         document
-            .querySelector('.modal-submit-button')
+            .querySelector('.todo-submit-button')
             .addEventListener('click', () => {
-                obtainTodoModalData('edit', splitIndex);
+                obtainTodoData('edit', splitIndex);
             });
     };
 
     // todo may be 'new' or one of the named todo's
     const todoClickHandler = (e) => {
+        // close the 'New Todo' or 'Edit Todo' input tabs if one is open
+        resetNewTodo();
+        resetEditTodo();
+
         const projIndexTodoIndex = e.target.dataset.projIndexTodoIndex;
         const splitIndex = projIndexTodoIndex.split('-');
 
@@ -1013,7 +1185,7 @@ const userInterface = (username) => {
     };
 
     // loads the starting application screen
-    const refreshPage = (projIndex, dateIndex) => {
+    const refreshPage = (projIndex, dateIndex, refreshType, splitIndex) => {
         // if a modal is present, remove it
         removeModal();
 
@@ -1077,6 +1249,16 @@ const userInterface = (username) => {
         document.querySelectorAll('.todo-del-button').forEach((button) => {
             button.addEventListener('click', todoDelClickHandler);
         });
+
+        // Open up a todo if it was just edited
+        // Doesn't currently work for switching projects
+        console.log(refreshType, splitIndex);
+        if (refreshType === 'edit') {
+            user.displayUserData(splitIndex);
+            document
+                .querySelector('.todo-edit-button')
+                .addEventListener('click', editClickHandler);
+        }
     };
 
     // For the first load, show the todos from every project
