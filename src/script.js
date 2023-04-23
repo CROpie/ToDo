@@ -461,12 +461,6 @@ const displayContent = () => {
     };
 
     const displayTodos = (projIndex, userData) => {
-        /*
-        // determine which projects are currently being displayed
-        const projSelected =
-            document.querySelector('.selected-project').dataset.projIndex;
-        */
-
         // replicate todos in a new array (of todo objects) having the appropriate projIndex as an attribute
         // projSelected='all' will give an array of every todo, whereas projIndex='num' will just have the selected project todos
         let todoList = getTodoList(userData, projIndex);
@@ -698,7 +692,19 @@ const inputInformation = () => {
         );
 
         inputContainer.appendChild(submitButton);
+
         const selectProjectDropdown = inputDropdown('new', projectList);
+
+        // since displayProjIndex is block scoped in userInterface(), there is no way to access it.
+        // A workaround to see the current selected project is through the dom
+        const displayProjIndex =
+            document.querySelector('.selected-project').dataset.projIndex;
+
+        // If currently displaying todos from a specific project, that project should be automatically loaded on the 'new todo' screen.
+        if (displayProjIndex !== 'all') {
+            selectProjectDropdown.selectedIndex =
+                parseInt(displayProjIndex) + 1;
+        }
         inputArea.appendChild(selectProjectDropdown);
     };
 
@@ -727,7 +733,7 @@ const inputInformation = () => {
         todoDate.classList.add('submit-todo-duedate');
 
         const inputFields = [todoName, todoDesc, todoNotes];
-        console.log(inputFields);
+
         inputFields.forEach((field) => {
             field.classList.add('todo-edit-field');
             field.contentEditable = 'true';
@@ -892,20 +898,15 @@ const userData = (username) => {
 const userInterface = (username) => {
     const user = userData(username);
 
+    // Two variables that store which display settings the user has chosen
+    let displayProjIndex = 'all';
+    let displayDateIndex = 'all';
+
     const removeModal = () => {
         if (document.querySelector('#modal-bg')) {
             document.querySelector('#modal-bg').remove();
         }
-        window.removeEventListener('click', removeModalWindow);
     };
-
-    function removeModalWindow(event) {
-        const projectModal = document.querySelector('#modal-bg');
-        if (event.target == projectModal) {
-            projectModal.remove();
-            window.removeEventListener('click', removeModalWindow);
-        }
-    }
 
     // A function that essentially retrieves submitted form data
     // Either for new todos, or when editing one
@@ -948,29 +949,41 @@ const userInterface = (username) => {
         }
 
         // Find out the current settings for displaying projects
+        /*
         const projIndex =
             document.querySelector('.selected-project').dataset.projIndex;
         const dateIndex =
             document.querySelector('.selected-date').dataset.dateIndex;
+            */
 
         // Want to refresh the page to 'all' if selected, or the project of the new todo if 'all' isn't selected
         if (inputType === 'new') {
             user.newTodo(todoProjIndex, newTodo);
 
-            if (projIndex === 'all') {
-                refreshPage(projIndex, dateIndex);
+            if (displayProjIndex === 'all') {
+                refreshPage(displayProjIndex, displayDateIndex);
             } else {
-                refreshPage(todoProjIndex, dateIndex);
+                refreshPage(todoProjIndex, displayDateIndex);
             }
         }
 
         if (inputType === 'edit') {
             splitIndex = user.editTodo(splitIndex, todoProjIndex, newTodo);
 
-            if (projIndex === 'all') {
-                refreshPage(projIndex, dateIndex, 'edit', splitIndex);
+            if (displayProjIndex === 'all') {
+                refreshPage(
+                    displayProjIndex,
+                    displayDateIndex,
+                    'edit',
+                    splitIndex
+                );
             } else {
-                refreshPage(todoProjIndex, dateIndex, 'edit', splitIndex);
+                refreshPage(
+                    todoProjIndex,
+                    displayDateIndex,
+                    'edit',
+                    splitIndex
+                );
             }
         }
     };
@@ -978,10 +991,10 @@ const userInterface = (username) => {
     // click functions: newTodo, newProject
     // the functions that operate when the corresponding button has been clicked
 
-    // sets up a todo modal and an eventListener for the data submission button
+    // sets up input fields and initializes a submit data button
     // projIndex will either be 'all' or the index of the project in the complete projectList
     const clickNewTodo = (projIndex) => {
-        // need to collect the project list to add to a dropdown menu in the modal
+        // need to collect the project list to add to a dropdown menu
         user.newTodoOpenStyle(projIndex);
 
         document.querySelector('.todo-input-field').focus();
@@ -1004,10 +1017,9 @@ const userInterface = (username) => {
                 data: [],
             };
             const projIndex = user.newProject(newProject);
-            // find the current date sort option
-            const dateIndex =
-                document.querySelector('.selected-date').dataset.dateIndex;
-            refreshPage(projIndex, dateIndex);
+
+            // uses projIndex instead of displayProjIndex to automatically display the newly created project
+            refreshPage(projIndex, displayDateIndex);
         }
         window.removeEventListener('mouseup', getProjectName);
     };
@@ -1032,11 +1044,7 @@ const userInterface = (username) => {
         if (!document.querySelector('.input-new-container')) {
             return;
         } else {
-            const projIndex =
-                document.querySelector('.selected-project').dataset.projIndex;
-            const dateIndex =
-                document.querySelector('.selected-date').dataset.dateIndex;
-            refreshPage(projIndex, dateIndex);
+            refreshPage(displayProjIndex, displayDateIndex);
         }
     };
 
@@ -1044,11 +1052,7 @@ const userInterface = (username) => {
         if (!document.querySelector('.input-edit-container')) {
             return;
         } else {
-            const projIndex =
-                document.querySelector('.selected-project').dataset.projIndex;
-            const dateIndex =
-                document.querySelector('.selected-date').dataset.dateIndex;
-            refreshPage(projIndex, dateIndex);
+            refreshPage(displayProjIndex, displayDateIndex);
         }
     };
 
@@ -1062,12 +1066,7 @@ const userInterface = (username) => {
         const splitIndex = projIndexTodoIndex.split('-');
         user.removeTodo(splitIndex);
 
-        // Find the current date and project display options
-        const projDisplayIndex =
-            document.querySelector('.selected-project').dataset.projIndex;
-        const dateDisplayIndex =
-            document.querySelector('.selected-date').dataset.dateIndex;
-        refreshPage(projDisplayIndex, dateDisplayIndex);
+        refreshPage(displayProjIndex, displayDateIndex);
     };
 
     // since there is only one option, didn't make a clickEdit function
@@ -1105,8 +1104,7 @@ const userInterface = (username) => {
         }
     };
 
-    // Changes the highlighted project in the menu
-    // The dataset dateIndex will become relevant when the page is refreshed
+    // Changes the highlighted time period in the menu and the displayDateIndex variable
     const dateSelection = (dateIndex) => {
         document
             .querySelector('.selected-date')
@@ -1115,19 +1113,18 @@ const userInterface = (username) => {
         document
             .querySelector(`[data-date-index="${dateIndex}"]`)
             .classList.add('selected-date');
+
+        displayDateIndex = dateIndex;
     };
 
     const dateClickHandler = (e) => {
         const dateIndex = e.target.dataset.dateIndex;
         dateSelection(dateIndex);
 
-        const projIndex =
-            document.querySelector('.selected-project').dataset.projIndex;
-        refreshPage(projIndex, dateIndex);
+        refreshPage(displayProjIndex, displayDateIndex);
     };
 
-    // Changes the highlighted project in the menu
-    // The dataset selectIndex will become relevant when the page is refreshed
+    // Changes the highlighted project in the menu and the displayProjIndex variable
     // This will 'remember' which list of todos should be displayed
     const projectSelection = (projIndex) => {
         document
@@ -1137,6 +1134,7 @@ const userInterface = (username) => {
         document
             .querySelector(`[data-proj-index="${projIndex}"]`)
             .classList.add('selected-project');
+        displayProjIndex = projIndex;
     };
 
     const projectClickHandler = (e) => {
@@ -1147,9 +1145,8 @@ const userInterface = (username) => {
             clickNewProject();
         } else {
             projectSelection(projIndex);
-            const dateIndex =
-                document.querySelector('.selected-date').dataset.dateIndex;
-            refreshPage(projIndex, dateIndex);
+
+            refreshPage(displayProjIndex, displayDateIndex);
         }
     };
 
@@ -1177,11 +1174,7 @@ const userInterface = (username) => {
         const projIndex = e.target.dataset.projDel;
         user.removeProject(projIndex);
 
-        // Find the current date display option
-
-        const dateIndex =
-            document.querySelector('.selected-date').dataset.dateIndex;
-        refreshPage('all', dateIndex);
+        refreshPage('all', displayDateIndex);
     };
 
     // loads the starting application screen
@@ -1202,11 +1195,13 @@ const userInterface = (username) => {
         document
             .querySelector(`[data-date-index="${dateIndex}"]`)
             .classList.add('selected-date');
+        displayDateIndex = dateIndex;
 
         // Highlight the 'remembered' project selection option
         document
             .querySelector(`[data-proj-index="${projIndex}"]`)
             .classList.add('selected-project');
+        displayProjIndex = projIndex;
 
         // Display whichever todos make it through the filter options
         user.displayUserTodos(projIndex);
@@ -1252,7 +1247,6 @@ const userInterface = (username) => {
 
         // Open up a todo if it was just edited
         // Doesn't currently work for switching projects
-        console.log(refreshType, splitIndex);
         if (refreshType === 'edit') {
             user.displayUserData(splitIndex);
             document
@@ -1261,8 +1255,8 @@ const userInterface = (username) => {
         }
     };
 
-    // For the first load, show the todos from every project
-    refreshPage('all', 'all');
+    // For the first load, show the todos from every project (set as 'all' at the beginning of userInterface
+    refreshPage(displayProjIndex, displayDateIndex);
 };
 
 const logIn = () => {
