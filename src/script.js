@@ -1,4 +1,7 @@
+// Provides a set of data that can be accessed by inputting the username 'Default'
+// The data is from an external .json file
 const createDefaultData = () => {
+    // Returns a date relative to the current day. The paramater is the number of days from today, with 0 being today and 1 being tomorrow etc
     const todayPlusInterval = (interval) => {
         const today = new Date();
         let day = today.getDate();
@@ -875,6 +878,20 @@ const userData = (username) => {
     const saveData = (userData) => {
         const tempJson = JSON.stringify(userData);
         localStorage.setItem(`${username}`, tempJson);
+        saveToHD(userData);
+    };
+
+    const saveToHD = (userData) => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(
+            new Blob([JSON.stringify(userData, null, 2)], {
+                type: 'text/plain',
+            })
+        );
+        a.setAttribute('download', 'data.txt');
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     };
 
     const consoleData = () => userData;
